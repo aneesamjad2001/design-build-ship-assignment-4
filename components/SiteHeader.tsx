@@ -46,7 +46,8 @@ export function SiteHeader() {
           >
             <ul className="mx-auto flex max-w-2xl md:gap-1">
               {LINKS.map((l) => {
-                const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+                // check-ins live under Progress, so that tab stays marked there
+                const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href) || (l.href === "/progress" && pathname.startsWith("/checkin"));
                 return (
                   <li key={l.href} className="flex-1 md:flex-none">
                     <Link

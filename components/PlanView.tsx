@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Banner } from "./Banner";
 import { Button, ButtonLink } from "./Button";
 import { BackupPanel } from "./BackupPanel";
+import { Disclosure } from "./Disclosure";
 import { FoodSleepCard } from "./FoodSleepCard";
 import { LookPicker } from "./LookPicker";
 import { ConfirmDialog } from "./Modal";
@@ -134,13 +135,9 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
 
       <FoodSleepCard />
 
-      <section aria-labelledby="nutrition" className="border border-line bg-surface p-5">
-        <h2 id="nutrition" className="font-display text-3xl font-extrabold">
-          Calorie and protein estimate
-        </h2>
-        <p className="mb-4 mt-1 text-muted">Optional. A rough daily starting point for your look, as a range. Nothing to log.</p>
+      <Disclosure id="nutrition" title="Calorie and protein estimate" summary="Optional. A rough daily range for your look. Nothing to log.">
         <NutritionPanel unit={profile.unit} lookId={profile.lookId} saved={data.nutrition} />
-      </section>
+      </Disclosure>
 
       <section aria-labelledby="body" className="border border-line bg-surface p-5">
         <h2 id="body" className="font-display text-3xl font-extrabold">
@@ -152,19 +149,12 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
         </ButtonLink>
       </section>
 
-      <section aria-labelledby="reminders" className="border-t border-line pt-6">
-        <h2 id="reminders" className="font-display text-3xl font-extrabold">
-          Training reminders
-        </h2>
-        <p className="mb-4 mt-2 max-w-prose text-muted">Want a nudge? Put a few gym slots on your calendar. Miss one and nothing breaks.</p>
+      <Disclosure id="reminders" title="Training reminders" summary="Put a few gym slots on your calendar. Miss one and nothing breaks.">
         <ReminderPanel perWeek={3} />
-      </section>
+      </Disclosure>
 
-      <section aria-labelledby="data" className="border-t border-line pt-6">
-        <h2 id="data" className="font-display text-3xl font-extrabold">
-          Your data
-        </h2>
-        <p className="mb-4 mt-2 max-w-prose text-muted">
+      <Disclosure id="data" title="Your data" summary="Download a backup, restore one, or start fresh.">
+        <p className="mb-4 max-w-prose text-muted">
           Your plan, workouts, check-ins and saved exercises are saved to your account, and only you can see them. You can download a copy of your
           plan, workouts and check-ins any time, or restore one (including a backup from the earlier, device-only Ironlog). Saved exercises aren&apos;t in
           the backup file; they stay in your account.
@@ -176,7 +166,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
             Reset everything
           </Button>
         </div>
-      </section>
+      </Disclosure>
 
       <ConfirmDialog
         open={confirmReset}

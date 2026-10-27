@@ -19,7 +19,7 @@ import { getExercise } from "@/lib/library";
 import { getLook } from "@/lib/looks";
 import { exercisesDone, liftSeries, weightedLifts, workoutDates } from "@/lib/progress";
 import { deleteWorkout, restoreWorkout, useIronlog, useToday } from "@/lib/store";
-import { planOverview, workoutTitle } from "@/lib/workouts";
+import { workoutTitle } from "@/lib/workouts";
 
 export function ProgressView() {
   const snap = useIronlog();
@@ -67,6 +67,8 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
         <p className="mt-2 text-muted">Training for the {look.name.toLowerCase()} look. No streaks to protect; every visit counts.</p>
       </header>
 
+      {/* a row of zeros is an empty screen in disguise: the numbers wait for a first workout */}
+      {workouts.length > 0 && (
       <dl className="grid grid-cols-3 gap-2">
         {[
           ["Workouts", workouts.length],
@@ -79,28 +81,17 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
           </div>
         ))}
       </dl>
+      )}
 
       {workouts.length === 0 ? (
         <section aria-labelledby="plan" className="border-2 border-ink bg-surface p-5">
           <h2 id="plan" className="font-display text-3xl font-extrabold">
-            Your plan, ready to go
+            Nothing here yet
           </h2>
-          <p className="mt-1 text-muted">Nothing saved yet. These are your three workouts; this page fills in as you train.</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {planOverview(look).map((p) => (
-              <div key={p.key} className="border border-line bg-raised p-3">
-                <p className="font-display text-xl font-extrabold">{workoutTitle(p.key)}</p>
-                <ul className="mt-1 text-sm text-muted">
-                  {p.exercises.map((e) => (
-                    <li key={e.exerciseId}>{getExercise(e.exerciseId)?.name}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          <p className="mt-1 text-muted">Finish your first workout and this page fills in: the days you trained, each weight&apos;s trend and your history.</p>
           <div className="mt-5">
             <ButtonLink href="/" variant="primary">
-              Start your first workout
+              See today&apos;s workout
             </ButtonLink>
           </div>
         </section>
