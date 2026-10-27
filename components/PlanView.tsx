@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Banner } from "./Banner";
@@ -69,23 +70,33 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
           <h2 id="workouts" className="font-display text-3xl font-extrabold uppercase tracking-wide">
             Your three workouts
           </h2>
-          <p className="mt-1 text-sm text-muted">
-            For {preview.name}: {preview.description} Do the next one whenever you go; every workout trains your whole body, so a missed week leaves no gap.
+          <p className="mt-1 text-muted">
+            For {preview.name}: {preview.description} Every workout trains your whole body, so a missed week leaves no gap.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <p className="mt-2 text-muted">
+            They rotate A → B → C, and Today always shows the next one. Want a different one today? Pick it under &ldquo;Your plan&rdquo; on{" "}
+            <Link href="/" className="font-semibold text-ink underline underline-offset-4">
+              Today
+            </Link>
+            .
+          </p>
+          {/* a plain overview, not a set of choices: no tile borders, nothing that looks pressable */}
+          <dl className="mt-4 grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-3">
             {planOverview(preview).map((p) => (
-              <div key={p.key} className="border border-line bg-raised p-3">
-                <p className="font-display text-xl font-extrabold uppercase tracking-wide">
-                  {workoutTitle(p.key)} <span className="font-body text-sm font-normal normal-case tracking-normal text-muted">~{p.minutes} min</span>
-                </p>
-                <ul className="mt-1 text-sm text-muted">
-                  {p.exercises.map((e) => (
-                    <li key={e.exerciseId}>{getExercise(e.exerciseId)?.name}</li>
-                  ))}
-                </ul>
+              <div key={p.key}>
+                <dt className="font-display text-2xl font-extrabold">
+                  {workoutTitle(p.key)} <span className="font-body text-base font-normal text-muted">· about {p.minutes} min</span>
+                </dt>
+                <dd>
+                  <ul className="mt-1 text-muted">
+                    {p.exercises.map((e) => (
+                      <li key={e.exerciseId}>{getExercise(e.exerciseId)?.name}</li>
+                    ))}
+                  </ul>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
         </section>
 
         <Segmented<Unit>

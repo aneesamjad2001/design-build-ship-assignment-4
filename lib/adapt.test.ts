@@ -28,6 +28,14 @@ describe("next workout", () => {
     assert.equal(after3Weeks.key, "C"); // no catching up, no debt
     assert.equal(after3Weeks.daysAway, 21);
   });
+  it("carries on from the workout actually done when a different one was picked", () => {
+    // A was done, so B was suggested, but C was picked and finished: next is A, after C
+    const r = nextWorkout([done(5, "A", 3), done(1, "C", 3)], TODAY);
+    assert.equal(r.key, "A");
+    assert.match(r.reason, /after Workout C/);
+    // picking the same one again moves on from it too
+    assert.equal(nextWorkout([done(5, "A", 3), done(1, "A", 3)], TODAY).key, "B");
+  });
   it("repeats a workout that was mostly unfinished", () => {
     const r = nextWorkout([done(2, "B", 1, 3)], TODAY);
     assert.equal(r.key, "B");

@@ -22,7 +22,7 @@ import { getLook } from "@/lib/looks";
 import type { LookId } from "@/lib/looks";
 import { chooseLook, setTime, useIronlog, useToday } from "@/lib/store";
 import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, describeFeeling, workoutTitle } from "@/lib/workouts";
-import type { Feeling, PlannedExercise, TimeOption } from "@/lib/workouts";
+import type { Feeling, PlannedExercise, TimeOption, WorkoutKey } from "@/lib/workouts";
 
 /** "3 × 8–12" (no set count for a single set, e.g. a 5-minute walk). */
 const amount = (p: PlannedExercise) => `${p.sets > 1 ? `${p.sets} × ` : ""}${p.min === p.max ? p.min : `${p.min}–${p.max}`}`;
@@ -140,17 +140,21 @@ function Today({
   const look = getLook(profile.lookId)!;
   const next = nextWorkout(workouts, today);
   const [feeling, setFeeling] = useState<Feeling>("normal");
+  // a different workout picked from "Your plan" for today only; null = the one the rotation suggests
+  const [picked, setPicked] = useState<WorkoutKey | null>(null);
+  const key = picked ?? next.key;
+  const isPick = key !== next.key;
   // an unfinished workout saved as you go. Today only renders after the browser has been read, so this never runs on the server.
   const [draft] = useState(() => readInProgress());
 
   const ctx = { intro: next.isFirst, daysAway: next.daysAway, feeling, makeUps: next.makeUps };
-  const planned = buildWorkout(look, next.key, profile.time, ctx);
+  const planned = buildWorkout(look, key, profile.time, ctx);
   // the same workout at "normal", so the picker can say (and the list can show) what changed
-  const baseline = buildWorkout(look, next.key, profile.time, { ...ctx, feeling: "normal" });
+  const baseline = buildWorkout(look, key, profile.time, { ...ctx, feeling: "normal" });
   const baselineById = new Map(baseline.exercises.map((p) => [p.exerciseId, p]));
   const lighterWeights = feeling === "tired" && planned.exercises.some((p) => suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit) != null);
   const feelingLine = describeFeeling(feeling, baseline, planned, { lighterWeights });
-  const minutes = Object.fromEntries(TIME_OPTIONS.map((t) => [t, buildWorkout(look, next.key, t, ctx).minutes])) as Record<TimeOption, number>;
+  const minutes = Object.fromEntries(TIME_OPTIONS.map((t) => [t, buildWorkout(look, key, t, ctx).minutes])) as Record<TimeOption, number>;
   const dateLine = parseDate(today).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const last = lastWorkout(workouts);
   const lastCount = recentCount(workouts, today, 28);
@@ -223,14 +227,26 @@ function Today({
       )}
 
       <section aria-labelledby="next-heading" className="border-2 border-ink bg-surface p-5">
-        <p className="font-display text-lg font-bold uppercase tracking-widest text-muted">{next.repeat ? "Finish this one" : "Next up"}</p>
+        <p className="font-display text-lg font-bold uppercase tracking-widest text-muted">{isPick ? "Your pick for today" : next.repeat ? "Finish this one" : "Next up"}</p>
         <h2 id="next-heading" className="font-display text-5xl font-black uppercase leading-none tracking-wide">
-          {workoutTitle(next.key)}
+          {workoutTitle(key)}
         </h2>
-        <p className="mt-2 text-muted">
-          <span className="font-semibold text-ink">Why: </span>
-          {next.reason}
-        </p>
+        {isPick ? (
+          <div className="mt-2 flex flex-col items-start gap-1">
+            <p className="text-muted">
+              You picked this one from your plan. Next in the rotation is {workoutTitle(next.key)}; once you finish this one, the plan carries on from{" "}
+              {workoutTitle(key)}.
+            </p>
+            <Button variant="ghost" onClick={() => setPicked(null)} className="!px-0">
+              Back to {workoutTitle(next.key)} (next up)
+            </Button>
+          </div>
+        ) : (
+          <p className="mt-2 text-muted">
+            <span className="font-semibold text-ink">Why: </span>
+            {next.reason}
+          </p>
+        )}
 
         <div className="mt-5 flex flex-col gap-4">
           {next.isFirst ? (
@@ -317,23 +333,32 @@ function Today({
           Your plan
         </h2>
         <p className="mt-1 text-muted">
-          Built for <span className="font-semibold text-ink">{look.name}</span>. Three full-body workouts that repeat — do the next one whenever you go.
+          Built for <span className="font-semibold text-ink">{look.name}</span>. Three full-body workouts that repeat — do the next one whenever you go, or
+          pick another for today.
         </p>
-        <ol className="mt-4 grid grid-cols-3 gap-2">
-          {WORKOUT_KEYS.map((k) => (
-            <li
-              key={k}
-              aria-current={k === next.key ? "step" : undefined}
-              className={`border-2 px-2 py-3 text-center ${k === next.key ? "border-ink bg-ink text-accent-ink" : "border-line"}`}
-            >
-              <span className="block font-display text-4xl font-black uppercase leading-none">
-                <span className="sr-only">Workout </span>
-                {k}
+        <div className="mt-4">
+          <Segmented<WorkoutKey>
+            legend="Which workout today?"
+            name="workout"
+            value={key}
+            onChange={(k) => setPicked(k === next.key ? null : k)}
+            options={WORKOUT_KEYS.map((k) => ({
+              value: k,
+              label: (
+                <>
+                  <span className="sr-only">Workout </span>
+                  {k}
+                </>
+              ),
+              sub: k === next.key ? "Next up" : last?.key === k ? "Last done" : "In the rotation",
+            }))}
+            hint={
+              <span aria-live="polite">
+                {isPick ? `Showing ${workoutTitle(key)} above: its exercises, time and Start button. Pick ${next.key} to go back to the next one in your plan.` : `Showing ${workoutTitle(key)} above, the next one in your plan.`}
               </span>
-              <span className={`block text-sm ${k === next.key ? "text-[#333333]" : "text-muted"}`}>{k === next.key ? "Next" : last?.key === k ? "Last done" : " "}</span>
-            </li>
-          ))}
-        </ol>
+            }
+          />
+        </div>
         {workouts.length > 0 && (
           <p className="mt-4 text-sm text-muted">
             {lastCount} {lastCount === 1 ? "workout" : "workouts"} in the last four weeks. Even one a week keeps what you&apos;ve built.
