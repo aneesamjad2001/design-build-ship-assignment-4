@@ -1,5 +1,6 @@
 "use client";
 
+import { Show, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
@@ -37,6 +38,7 @@ export function SiteHeader() {
         </Link>
         <div className="flex items-center gap-2">
           {!inWorkout && (
+          <Show when="signed-in">
           <nav
             aria-label="Main"
             className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:static md:border-0 md:bg-transparent"
@@ -60,8 +62,13 @@ export function SiteHeader() {
               })}
             </ul>
           </nav>
+          </Show>
           )}
           <ThemeToggle />
+          {/* account menu, including Sign out; only there when someone is signed in */}
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </div>
       <div className="hazard h-1.5" aria-hidden />
