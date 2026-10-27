@@ -104,6 +104,22 @@ dialog.sheet::backdrop {
   .plate-in {
     animation: plate-in 0.35s ease-out both;
   }
+  .changed {
+    animation: changed-in 0.7s ease-out;
+  }
+}
+/* A number that differs from the normal plan (e.g. after "Tired"): a quiet
+   raised background that stays, with a brief brighter flash when it changes. */
+.changed {
+  background: var(--raised);
+}
+@keyframes changed-in {
+  from {
+    background: var(--line);
+  }
+  to {
+    background: var(--raised);
+  }
 }
 @keyframes sheet-in {
   from {

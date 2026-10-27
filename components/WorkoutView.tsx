@@ -181,7 +181,7 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
     const replacement = swapPlanned(cur, toId, look.style);
     if (!replacement) return;
     const from = cur.exerciseId;
-    const suggestion = suggestedWeight(toId, weights, daysAway, w.unit);
+    const suggestion = suggestedWeight(toId, weights, daysAway, w.unit, w.feeling);
     setW((c) => {
       const progress = { ...c.progress };
       delete progress[from];
@@ -214,7 +214,7 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
           w={w}
           cur={cur}
           hasDone={hasDoneExercise(workouts, cur.exerciseId)}
-          suggested={suggestedWeight(cur.exerciseId, weights, daysAway, w.unit)}
+          suggested={suggestedWeight(cur.exerciseId, weights, daysAway, w.unit, w.feeling)}
           error={weightError[cur.exerciseId]}
           canSwap={swapOptions.length > 0}
           onSet={tapSet}
@@ -434,7 +434,7 @@ function ExerciseCard({
           optional
           hint={
             suggested != null
-              ? `Suggested ${fmtWeight(suggested)} ${unit}, based on how last time went.`
+              ? `Suggested ${fmtWeight(suggested)} ${unit}, based on how last time went${w.feeling === "tired" ? " and a little lighter because you're tired" : ""}.`
               : "Not sure where to start? “How to do it” explains how to pick a first weight. For dumbbells, enter one dumbbell."
           }
           error={error}

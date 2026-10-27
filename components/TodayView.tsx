@@ -21,8 +21,11 @@ import { getExercise, measureLabel } from "@/lib/library";
 import { getLook } from "@/lib/looks";
 import type { LookId } from "@/lib/looks";
 import { chooseLook, setTime, useIronlog, useToday } from "@/lib/store";
-import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, workoutTitle } from "@/lib/workouts";
-import type { Feeling, TimeOption } from "@/lib/workouts";
+import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, describeFeeling, workoutTitle } from "@/lib/workouts";
+import type { Feeling, PlannedExercise, TimeOption } from "@/lib/workouts";
+
+/** "3 × 8–12" (no set count for a single set, e.g. a 5-minute walk). */
+const amount = (p: PlannedExercise) => `${p.sets > 1 ? `${p.sets} × ` : ""}${p.min === p.max ? p.min : `${p.min}–${p.max}`}`;
 
 export function TodayView() {
   const snap = useIronlog();
@@ -142,6 +145,11 @@ function Today({
 
   const ctx = { intro: next.isFirst, daysAway: next.daysAway, feeling, makeUps: next.makeUps };
   const planned = buildWorkout(look, next.key, profile.time, ctx);
+  // the same workout at "normal", so the picker can say (and the list can show) what changed
+  const baseline = buildWorkout(look, next.key, profile.time, { ...ctx, feeling: "normal" });
+  const baselineById = new Map(baseline.exercises.map((p) => [p.exerciseId, p]));
+  const lighterWeights = feeling === "tired" && planned.exercises.some((p) => suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit) != null);
+  const feelingLine = describeFeeling(feeling, baseline, planned, { lighterWeights });
   const minutes = Object.fromEntries(TIME_OPTIONS.map((t) => [t, buildWorkout(look, next.key, t, ctx).minutes])) as Record<TimeOption, number>;
   const dateLine = parseDate(today).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const last = lastWorkout(workouts);
@@ -157,7 +165,7 @@ function Today({
       index: 0,
       progress: Object.fromEntries(
         planned.exercises.map((p) => {
-          const s = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit);
+          const s = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit, feeling);
           return [p.exerciseId, { setsDone: 0, weight: s != null ? fmtWeight(s) : "" }];
         }),
       ),
@@ -250,7 +258,11 @@ function Today({
               { value: "normal", label: "Normal" },
               { value: "tired", label: "Tired" },
             ]}
-            hint={feeling === "tired" ? "Got it — a shorter, lighter version." : "Tired? Say so and we'll make it lighter."}
+            hint={
+              <span aria-live="polite" className={feeling === "normal" ? "" : "font-semibold text-ink"}>
+                {feelingLine}
+              </span>
+            }
           />
         </div>
 
@@ -274,17 +286,25 @@ function Today({
         <ol className="mt-5 divide-y divide-line border-y border-line">
           {planned.exercises.map((p) => {
             const e = getExercise(p.exerciseId)!;
-            const w = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit);
+            const w = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit, feeling);
             const sub = p.note ?? (w != null ? `Start with ${fmtWeight(w)} ${profile.unit}` : e.weighted ? "We'll help you find a starting weight" : "Just your bodyweight");
+            const was = baselineById.get(p.exerciseId);
+            const changed = was != null && (was.sets !== p.sets || was.min !== p.min || was.max !== p.max);
             return (
               <li key={p.exerciseId} className="flex items-baseline justify-between gap-4 py-3">
                 <div className="min-w-0">
                   <p className="text-lg font-semibold">{e.name}</p>
-                  <p className="text-sm text-muted">{sub}</p>
+                  <p className="text-sm text-muted">
+                    {sub}
+                    {changed && was && ` · normally ${amount(was)}`}
+                  </p>
                 </div>
-                <p className="flex-none font-stencil text-2xl font-black tracking-wide">
-                  {p.sets > 1 ? `${p.sets} × ` : ""}
-                  {p.min === p.max ? p.min : `${p.min}–${p.max}`} <span className="text-base font-bold text-muted">{measureLabel(e.measure)}</span>
+                <p
+                  // remounts when the feeling changes, so the highlight replays on what changed
+                  key={changed ? feeling : "same"}
+                  className={`flex-none font-stencil text-2xl font-black tracking-wide ${changed ? "changed px-1.5" : ""}`}
+                >
+                  {amount(p)} <span className="font-body text-base font-semibold text-muted">{measureLabel(e.measure)}</span>
                 </p>
               </li>
             );

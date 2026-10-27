@@ -86,6 +86,13 @@ describe("weights", () => {
     assert.equal(suggestedWeight("hip-thrust", book, 3, "lb"), null); // never done
     assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "kg"), null); // other unit: ask again
   });
+  it("suggests a lighter weight on a tired day, at least one step down; fresh and normal don't change it", () => {
+    const book: WeightBook = { "dumbbell-bench-press": { weight: 40, unit: "lb", rightStreak: 0, updatedAt: TODAY } };
+    assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "lb", "tired"), 35);
+    assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "lb", "fresh"), 40);
+    assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "lb", "normal"), 40);
+    assert.ok(suggestedWeight("dumbbell-bench-press", book, 40, "lb", "tired")! < suggestedWeight("dumbbell-bench-press", book, 40, "lb")!);
+  });
   it("folds a finished workout into the book, ignoring skipped and unweighted work", () => {
     const w = done(0, "A", 3, 3, { exerciseId: "dumbbell-bench-press", weight: 40, feedback: "easy" });
     w.exercises.push({ exerciseId: "push-up", setsDone: 3, setsPlanned: 3, weight: null });
