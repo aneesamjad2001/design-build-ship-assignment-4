@@ -11,7 +11,9 @@ tells me what's next.
 
 ```mermaid
 flowchart TD
-    A([Open Ironlog, nothing saved]) --> B["Home: 3-step explainer +<br/>'What body are you aiming for?'"]
+    S([Open Ironlog, signed out]) --> T["Welcome: what it is ·<br/>Create an account / Sign in"]
+    T --> A([Signed in, nothing saved yet])
+    A --> B["Home: 3-step explainer +<br/>'What body are you aiming for?'"]
     B --> C["6 looks, each a figure + plain words<br/>(honest note underneath)"]
     C --> D[Tap 'Show my plan']
     D --> E{Picked a look?}
@@ -23,7 +25,7 @@ flowchart TD
     H -- Not now --> J["Look around: Progress shows the plan,<br/>Plan shows the three workouts"]
 ```
 
-No sign-up, no tour, no empty screen: one tap from a cold start to a real workout.
+One sign-up screen (Clerk), then no tour and no empty screen: one question from a new account to a real workout.
 
 ### 2. The main task: do the workout
 
@@ -54,7 +56,7 @@ your place; Today offers "Resume workout".
 
 ```mermaid
 flowchart TD
-    A([Return days or weeks later]) --> B[Ironlog reads its saved data]
+    A([Return days or weeks later, any device]) --> B[Ironlog loads your rows from Supabase]
     B --> C{Anything saved?}
     C -- Nothing --> D[First-visit flow]
     C -- Yes --> E["Welcome back · last workout, N days ago"]
@@ -82,11 +84,14 @@ set-by-set logbook. The full record of who decided what is in
 
 | Screen | Route | States | Errors |
 |---|---|---|---|
-| Today | `/` | loading, first visit (look picker), first workout, returning, back after a gap, tired, workout in progress | no look picked; storage unreadable → keep what's readable, say so; storage blocked → works in memory, says so |
+| Welcome | `/` signed out | what Ironlog is, Create an account / Sign in | — |
+| Today | `/` | loading, first visit (look picker), first workout, returning, back after a gap, tired, workout in progress | no look picked; couldn't load → banner with Try again; a change not saved → banner with Try again; unreadable rows → keep what's readable, say so |
 | Workout | `/workout` | no workout in progress, exercise card (new / done before), set done + rest, skipped, swap dialog, finish, exit confirm, discard confirm | weight not a number / over 1000; no sets done |
 | Progress | `/progress` | plan-only (never blank), has workouts, has check-ins, deleted (undo) | — |
 | Check-in | `/checkin` | empty, saved, history, deleted (undo) | no measurement; not a number; implausible value; future date |
 | Plan | `/plan` | look + live preview, units, estimate (form / result), reminders, backup, reset confirm | estimate: age (adults only), formula version, height, weight, activity |
+| Exercises | `/exercises` | find form, loading, results, nothing found, no names match, saved list (empty / items), note form, removed (undo) | no muscle or equipment picked; wger down (Try again); bad filter; signed out; note too long |
 
 Considered and **cut**: muscle or equipment questions, streaks and weekly targets,
-meal logging, weight goals, daily sleep logs, accounts and sync.
+meal logging, weight goals, daily sleep logs. (Accounts and sync were cut in Assignment 3
+and added in Assignment 4.)
