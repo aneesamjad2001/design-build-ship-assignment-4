@@ -8,11 +8,9 @@ export function Welcome() {
         Walk in with a plan.
       </h1>
       <p className="text-lg text-muted">
-        Pick the kind of body you&apos;re aiming for and Ironlog gives you an exact workout, one exercise at a
-        time. It remembers your weights, eases you back in after time away, and keeps a library of exercises
-        you&apos;ve saved.
+        Pick the body you&apos;re aiming for and get an exact workout, one exercise at a time. Ironlog remembers your
+        weights and eases you back in after time away, on any device.
       </p>
-      <p className="text-muted">Your workouts are tied to your account, so they follow you to any device.</p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <ButtonLink href="/sign-up" variant="primary" className="w-full sm:w-auto">
           Create an account

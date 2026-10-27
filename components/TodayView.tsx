@@ -48,12 +48,6 @@ export function TodayView() {
 /* First visit: one pick takes a cold start to a real plan.            */
 /* ------------------------------------------------------------------ */
 
-const STEPS = [
-  ["Pick a look", "Say what kind of body you're aiming for, in plain words."],
-  ["Get today's workout", "Exact exercises, how to do each one, and where to start the weights."],
-  ["Come back whenever", "It remembers what you did and tells you what's next. No schedule to keep."],
-];
-
 function Onboarding() {
   const [look, setLook] = useState<LookId | null>(null);
   const [error, setError] = useState<string>();
@@ -78,22 +72,10 @@ function Onboarding() {
         <p className="text-lg text-muted">Welcome to Ironlog</p>
         <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">Never walk into the gym without a plan</h1>
         <p className="mt-3 max-w-prose text-lg text-muted">
-          Tell us the body you want. Ironlog builds your workouts and, every time you show up, tells you exactly what to do next — however long it&apos;s
-          been. It saves to your account, so it follows you to any device.
+          Pick the body you&apos;re aiming for and get your first workout right away. Every time you come back, Ironlog tells you exactly what to do
+          next, however long it&apos;s been.
         </p>
       </header>
-
-      <ol className="grid gap-3 sm:grid-cols-3">
-        {STEPS.map(([title, text], i) => (
-          <li key={title} className="border border-line bg-surface p-4">
-            <span className="font-stencil text-3xl font-black text-muted" aria-hidden>
-              {i + 1}
-            </span>
-            <p className="font-display text-xl font-extrabold">{title}</p>
-            <p className="mt-1 text-sm text-muted">{text}</p>
-          </li>
-        ))}
-      </ol>
 
       <form ref={formRef} onSubmit={submit} noValidate className="flex flex-col gap-6">
         <LookPicker
@@ -205,19 +187,6 @@ function Today({
       {planned.notes.map((n) => (
         <Banner key={n} tone="info" title={n} />
       ))}
-      {checkinDue && (
-        <Banner
-          tone="info"
-          title="Time for a monthly check-in?"
-          action={
-            <ButtonLink href="/checkin" variant="secondary" className="!min-h-11 !text-base">
-              Add one
-            </ButtonLink>
-          }
-        >
-          Optional — a minute to note your numbers so you can see the trend.
-        </Banner>
-      )}
 
       <section aria-labelledby="next-heading" className="border-2 border-ink bg-surface p-5">
         <p className="text-lg text-muted">{isPick ? "Your pick for today" : next.repeat ? "Finish this one" : "Next up"}</p>
@@ -320,6 +289,21 @@ function Today({
           })}
         </ol>
       </section>
+
+      {/* optional, so it waits below the workout instead of standing in front of it */}
+      {checkinDue && (
+        <Banner
+          tone="info"
+          title="Time for a monthly check-in?"
+          action={
+            <ButtonLink href="/checkin" variant="secondary" className="!min-h-11 !text-base">
+              Add one
+            </ButtonLink>
+          }
+        >
+          Optional — a minute to note your numbers so you can see the trend.
+        </Banner>
+      )}
 
       <section aria-labelledby="plan-heading" className="border border-line bg-surface p-5">
         <h2 id="plan-heading" className="font-display text-3xl font-extrabold">

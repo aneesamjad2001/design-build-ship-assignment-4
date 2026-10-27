@@ -512,8 +512,6 @@ function ExerciseCard({
         />
       )}
 
-      {howTo}
-
       <div className="flex flex-col gap-3">
         <Button variant="primary" onClick={onNext} className="w-full">
           {isLast ? "Finish" : "Next exercise"}
@@ -532,6 +530,9 @@ function ExerciseCard({
           </Button>
         )}
       </div>
+
+      {/* after the controls, so a long how-to never pushes "Next exercise" off screen */}
+      {howTo}
     </div>
   );
 }

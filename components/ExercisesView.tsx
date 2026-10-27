@@ -103,6 +103,7 @@ function Library({ saved }: { saved: SavedExercise[] }) {
         <h2 id="find-heading" className="font-display text-3xl font-extrabold">
           Find exercises
         </h2>
+        <p className="-mt-2 text-muted">Choose a muscle, a piece of equipment, or both.</p>
         <Field id="lib-muscle" label="Muscle" error={filterError}>
           {(p) => (
             <Select
