@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Barlow, Big_Shoulders } from "next/font/google";
 import { RouteFocus } from "@/components/RouteFocus";
@@ -34,14 +35,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-dvh font-body">
-        <a href="#main" className="skip-link">
+        <ClerkProvider>
+          <a href="#main" className="skip-link">
           Skip to content
-        </a>
-        <SiteHeader />
-        <RouteFocus />
-        <main id="main" className="mx-auto w-full max-w-2xl px-4 pb-28 pt-6 md:pb-14">
+          </a>
+          <SiteHeader />
+          <RouteFocus />
+          <main id="main" className="mx-auto w-full max-w-2xl px-4 pb-28 pt-6 md:pb-14">
           {children}
-        </main>
+          </main>
+        </ClerkProvider>
       </body>
     </html>
   );
