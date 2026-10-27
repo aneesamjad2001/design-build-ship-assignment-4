@@ -17,7 +17,8 @@ was a one-browser prototype; this version is a multi-user app:
 
 Next.js 16 (App Router) + Tailwind, deployed on Vercel. Free tiers only.
 
-- **Live:** added with the Vercel deploy
+- **Live:** https://design-build-ship-assignment-4.vercel.app
+- **Repository:** https://github.com/aneesamjad2001/design-build-ship-assignment-4
 - **Who it's for:** someone who goes to the gym *irregularly*, arrives with no plan,
   and doesn't want to learn muscle jargon or fill in a logbook. (This is the
   author: the app was rebuilt around that problem after the first release.)
