@@ -44,6 +44,24 @@ describe("wger: one exercise", () => {
     assert.equal(img("javascript:alert(1)"), null);
     assert.equal(parseExercise({ ...RAW, images: [] })!.imageUrl, null);
   });
+  it("draws the muscles on the side of the body most of them are on", () => {
+    const m = (id: number, front: boolean) => ({
+      id, name_en: `m${id}`, is_front: front,
+      image_url_main: `https://wger.de/static/images/muscles/main/muscle-${id}.svg`,
+      image_url_secondary: `https://wger.de/static/images/muscles/secondary/muscle-${id}.svg`,
+    });
+    const map = parseExercise({ ...RAW, muscles: [m(11, false), m(8, false), m(10, true)], muscles_secondary: [m(7, false), m(6, true)] })!.muscleMap;
+    assert.deepEqual(map, {
+      side: "back",
+      main: ["https://wger.de/static/images/muscles/main/muscle-11.svg", "https://wger.de/static/images/muscles/main/muscle-8.svg"],
+      secondary: ["https://wger.de/static/images/muscles/secondary/muscle-7.svg"],
+    });
+  });
+  it("leaves out muscle layers that aren't on wger, and has no map without any", () => {
+    const evil = { id: 4, is_front: true, image_url_main: "https://evil.example/m.svg", image_url_secondary: "javascript:alert(1)" };
+    assert.equal(parseExercise({ ...RAW, muscles: [evil], muscles_secondary: [evil] })!.muscleMap, null);
+    assert.equal(parseExercise({ ...RAW, muscles: [], muscles_secondary: [] })!.muscleMap, null);
+  });
 });
 
 describe("wger: descriptions are plain text", () => {

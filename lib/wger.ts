@@ -62,9 +62,23 @@ export interface WgerExercise {
   musclesSecondary: string[];
   equipment: string[];
   imageUrl: string | null;
+  /** wger's body diagram for when there's no photo: the outline plus a layer per muscle. */
+  muscleMap: MuscleMap | null;
   license: string;
   author: string;
 }
+
+export interface MuscleMap {
+  side: "front" | "back";
+  /** layers drawn over `MUSCLE_MAP_BASE[side]`, all from https://wger.de */
+  main: string[];
+  secondary: string[];
+}
+
+export const MUSCLE_MAP_BASE = {
+  front: "https://wger.de/static/images/muscles/muscular_system_front.svg",
+  back: "https://wger.de/static/images/muscles/muscular_system_back.svg",
+} as const;
 
 export interface Filters {
   muscle: number | null;
@@ -104,18 +118,33 @@ export function toPlainText(html: string): string {
     .trim();
 }
 
-/** Only https images from wger's own host are shown. */
-function safeImage(v: unknown): string | null {
-  if (!Array.isArray(v)) return null;
-  const imgs = v.filter(isObj);
-  const pick = imgs.find((i) => i.is_main === true) ?? imgs[0];
-  const url = pick ? str(pick.image) : "";
+/** Only https URLs on wger's own host are shown. */
+function wgerUrl(v: unknown): string | null {
   try {
-    const u = new URL(url);
+    const u = new URL(str(v));
     return u.protocol === "https:" && u.hostname === "wger.de" ? u.toString() : null;
   } catch {
     return null;
   }
+}
+
+function safeImage(v: unknown): string | null {
+  if (!Array.isArray(v)) return null;
+  const imgs = v.filter(isObj);
+  const pick = imgs.find((i) => i.is_main === true) ?? imgs[0];
+  return pick ? wgerUrl(pick.image) : null;
+}
+
+/** The side of the body most of the main muscles are on, with each muscle's layer on that side. */
+function muscleMap(main: unknown, secondary: unknown): MuscleMap | null {
+  const list = (v: unknown) => (Array.isArray(v) ? v.filter(isObj) : []);
+  const primary = list(main);
+  const front = primary.filter((m) => m.is_front === true).length;
+  const side = front >= primary.length - front ? "front" : "back";
+  const layers = (ms: Record<string, unknown>[], key: string) =>
+    ms.filter((m) => m.is_front === (side === "front")).map((m) => wgerUrl(m[key])).filter((u): u is string => u !== null);
+  const map = { side, main: layers(primary, "image_url_main"), secondary: layers(list(secondary), "image_url_secondary") } as const;
+  return map.main.length + map.secondary.length > 0 ? map : null;
 }
 
 /** One `exerciseinfo` result → what we show, or null when it has no English name. */
@@ -134,6 +163,7 @@ export function parseExercise(raw: unknown): WgerExercise | null {
     musclesSecondary: names(raw.muscles_secondary, "name_en"),
     equipment: names(raw.equipment),
     imageUrl: safeImage(raw.images),
+    muscleMap: muscleMap(raw.muscles, raw.muscles_secondary),
     license: license || "CC-BY-SA",
     author: str(en.license_author) || str(raw.license_author),
   };

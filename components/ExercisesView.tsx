@@ -8,7 +8,7 @@ import { LoadingState } from "./States";
 import { MAX_SAVED_NOTE, validateNote } from "@/lib/saved";
 import type { SavedExercise } from "@/lib/saved";
 import { removeSaved, restoreSaved, saveExercise, setSavedNote, useIronlog } from "@/lib/store";
-import { EQUIPMENT, MUSCLES, PAGE_LIMIT, matchName } from "@/lib/wger";
+import { EQUIPMENT, MUSCLES, MUSCLE_MAP_BASE, PAGE_LIMIT, matchName } from "@/lib/wger";
 import type { WgerExercise } from "@/lib/wger";
 
 type Browse =
@@ -275,27 +275,44 @@ function Results({
   );
 }
 
-function Thumb({ url, name }: { url: string | null; name: string }) {
+/* wger's photos and diagrams are shown as-is, so plain <img>: there's nothing for next/image to optimise */
+/* eslint-disable @next/next/no-img-element */
+
+/** wger's photo; without one, wger's body diagram with the worked muscles highlighted. */
+function Thumb({ ex }: { ex: WgerExercise }) {
   const [broken, setBroken] = useState(false);
-  if (!url || broken) {
+  if (ex.imageUrl && !broken) {
     return (
-      <div aria-hidden className="flex h-24 w-24 flex-none items-center justify-center border border-line bg-raised p-2 text-center text-sm text-muted">
-        No photo on wger
+      <img src={ex.imageUrl} alt={`${ex.name}, photo from wger`} loading="lazy" onError={() => setBroken(true)} className="h-24 w-24 flex-none border border-line bg-white object-contain" />
+    );
+  }
+  if (ex.muscleMap && !broken) {
+    const { side, main, secondary } = ex.muscleMap;
+    const worked = [ex.muscles.join(", "), ex.musclesSecondary.length ? `also ${ex.musclesSecondary.join(", ")}` : ""].filter(Boolean).join("; ");
+    return (
+      <div role="img" aria-label={`Diagram of the muscles ${ex.name} works (${side} of the body): ${worked}. wger has no photo of it.`} className="flex h-24 w-24 flex-none justify-center border border-line bg-white">
+        {/* the outline and every muscle layer share one 200-wide canvas, so they stack exactly */}
+        <div className="relative h-full aspect-[200/369]">
+          {[MUSCLE_MAP_BASE[side], ...secondary, ...main].map((src) => (
+            <img key={src} src={src} alt="" loading="lazy" onError={() => setBroken(true)} className="absolute left-0 top-0 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
   return (
-    // a plain img: wger's photos are shown as-is, so there's nothing for next/image to optimise
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt={`${name}, photo from wger`} loading="lazy" onError={() => setBroken(true)} className="h-24 w-24 flex-none border border-line bg-white object-contain" />
+    <div aria-hidden className="flex h-24 w-24 flex-none items-center justify-center border border-line bg-raised p-2 text-center text-sm text-muted">
+      No photo on wger
+    </div>
   );
 }
+/* eslint-enable @next/next/no-img-element */
 
 function ExerciseCard({ ex, isSaved, onSave, onRemove }: { ex: WgerExercise; isSaved: boolean; onSave: () => void; onRemove: () => void }) {
   return (
     <li className="flex flex-col gap-3 border border-line bg-surface p-4">
       <div className="flex gap-4">
-        <Thumb url={ex.imageUrl} name={ex.name} />
+        <Thumb ex={ex} />
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-2xl font-extrabold leading-tight">{ex.name}</h3>
           <p className="mt-1 text-sm text-muted">
