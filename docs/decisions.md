@@ -131,3 +131,32 @@ whole project and made focused fixes, which Claude then read, tested and kept:
 Left as is, and said so: *Reset everything* and backup restore use several requests, so
 a connection failure halfway can leave part done. Making them one database
 transaction would need a database function, which is more than this pass called for.
+
+**A design pass for first-time users (Oct 27):** the author asked for the app to be
+easy to navigate on first use and useful in real life. Three independent reviews ran
+in parallel:
+- a literature review of gym apps and first-run research (NN/g on onboarding,
+  tutorials and progressive disclosure; Hoober on thumb reach; WCAG 2.5.8 target
+  size; Lally 2010 on habits; app teardowns of Hevy, Strong, Fitbod and Nike
+  Training Club);
+- Codex's design review of every screen;
+- an agent walking through the live app as a first-time user.
+
+The research mostly confirmed choices already made (one question before a real
+workout, eased weights after a gap with the reason shown, no streaks). The changes
+that came out of it:
+- **Onboarding:** the explainer cards are gone; the look picker follows a two-line intro.
+- **Workout:**
+  - Next / Skip / Swap come before the long how-to;
+  - the rest bar appears only during a rest;
+  - "Out of time? Finish now" ends early.
+- **Plan:**
+  - a tapped look or unit saves at once. This was a real bug: the old Save button was ~2,000 px down, and leaving lost the choice;
+  - optional tools and the full workout lists fold into closed sections.
+- **Today:** the first-visit message is said once, the links that repeated the tab bar are gone, and the check-in prompt waits below the workout.
+- **Progress:** no row of zeros before a first workout.
+- **Exercises:** the saved list sits above the results, and the page scrolls to the results.
+
+**Considered, not done before the deadline:** moving the name filter into the results,
+a "Use in today's workout" action from the library, and a welcome-back override
+("use my usual weights").
