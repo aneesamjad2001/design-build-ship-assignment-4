@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "./Button";
 
-const PRESETS = [60, 90, 120, 180];
 /** The wall clock, read only from event handlers and timers — never during render. */
 const nowMs = () => Date.now();
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -73,23 +72,13 @@ export function RestTimer({ request, className = "bottom-14 md:bottom-0" }: { re
   }, [requestId, requestSeconds]);
   const remaining = running ? Math.max(0, Math.ceil((running.endsAt - now) / 1000)) : 0;
 
+  // nothing pinned over the set buttons until a rest starts (ticking a set starts one)
+  if (phase.kind === "idle") return null;
+
   return (
     <section aria-label="Rest timer" className={`fixed inset-x-0 z-20 ${className}`}>
       <div className="mx-auto max-w-2xl px-3 pb-2">
         <div className="relative overflow-hidden border-2 border-line bg-raised p-2 shadow-[0_8px_24px_var(--backdrop)]">
-          {phase.kind === "idle" && (
-            <div className="flex items-center gap-2">
-              <span className="px-1 text-lg font-semibold text-muted">Rest</span>
-              <div className="grid flex-1 grid-cols-4 gap-2">
-                {PRESETS.map((s) => (
-                  <Button key={s} variant="secondary" onClick={() => start(s)} aria-label={`Start a ${clock(s)} rest`} className="!min-h-11 !px-0 !text-base">
-                    {clock(s)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {running && (
             <div className="flex items-center gap-3">
               <p role="timer" aria-live="off" className="min-w-[4.5rem] px-1 font-stencil text-4xl font-black leading-none">

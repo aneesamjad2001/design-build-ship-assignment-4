@@ -211,9 +211,7 @@ function Today({
         )}
 
         <div className="mt-5 flex flex-col gap-4">
-          {next.isFirst ? (
-            <p className="text-sm text-muted">Your first one is short on purpose. Next time you can choose how long you have.</p>
-          ) : (
+          {!next.isFirst && (
           <Segmented<TimeOption>
             legend="How long do you have?"
             name="time"
@@ -341,14 +339,6 @@ function Today({
             {lastCount} {lastCount === 1 ? "workout" : "workouts"} in the last four weeks. Even one a week keeps what you&apos;ve built.
           </p>
         )}
-        <div className="mt-3 flex flex-wrap gap-x-2">
-          <ButtonLink href="/progress" variant="ghost">
-            See my progress →
-          </ButtonLink>
-          <ButtonLink href="/plan" variant="ghost">
-            Change my look →
-          </ButtonLink>
-        </div>
       </section>
 
       <footer className="flex flex-col gap-2">
