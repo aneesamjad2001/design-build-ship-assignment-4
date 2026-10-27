@@ -79,7 +79,7 @@ body. Tokens live in `app/globals.css`; use the shared components in `components
 - `docs/` — research, decisions, first-run checks
 
 ## Commands
-`npm run dev` · `npm run build` · `npm run lint` · `npm test` (Node's built-in test runner)
+`npm run dev` · `npm run build` · `npm run lint` · `npm test` (Node's built-in test runner) · `npm run e2e` (Playwright: two users can't see each other's data; needs the dev server keys in `.env.local`)
 
 ## Gotchas
 - Keep `cacheComponents` / `partialPrefetching` **off** in `next.config.ts`: they keep

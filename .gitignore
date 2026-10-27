@@ -46,3 +46,7 @@ next-env.d.ts
 # third-party agent skills installed by clerk init (not used by Claude Code, not reviewed)
 /.agents/
 skills-lock.json
+
+# playwright
+/test-results/
+/playwright-report/
