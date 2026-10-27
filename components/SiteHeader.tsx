@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/", label: "Today" },
   { href: "/progress", label: "Progress" },
   { href: "/plan", label: "Plan" },
+  { href: "/exercises", label: "Exercises" },
 ];
 
 function Barbell() {
@@ -51,7 +52,7 @@ export function SiteHeader() {
                     <Link
                       href={l.href}
                       aria-current={active ? "page" : undefined}
-                      className={`flex h-14 items-center justify-center border-t-4 px-4 text-lg font-semibold md:border-b-4 md:border-t-0 ${
+                      className={`flex h-14 items-center justify-center border-t-4 px-2 text-base font-semibold md:px-4 md:text-lg md:border-b-4 md:border-t-0 ${
                         active ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"
                       }`}
                     >

@@ -27,8 +27,11 @@ import { clearInProgress, keepOnlyInProgress, setInProgressOwner } from "./inpro
 import type { LookId } from "./looks";
 import type { NutritionProfile } from "./nutrition";
 import { CHECKIN_COLUMNS, PROFILE_COLUMNS, WORKOUT_COLUMNS, checkinRow, fromRows, profileRow, workoutRow } from "./rows";
+import { SAVED_COLUMNS, parseSaved, savedFrom, savedRow } from "./saved";
+import type { SavedExercise } from "./saved";
 import type { CheckinRow, ProfileRow, WorkoutRow } from "./rows";
 import { createSupabase } from "./supabase";
+import type { WgerExercise } from "./wger";
 import type { TimeOption } from "./workouts";
 
 export interface Snapshot {
@@ -36,6 +39,8 @@ export interface Snapshot {
   ready: boolean;
   /** what the app shows: weights and measurements converted to the profile's unit */
   data: Data;
+  /** exercises saved from the wger library, newest first */
+  saved: SavedExercise[];
   /** something unreadable in the account was skipped */
   recovered: boolean;
   /** the data couldn't be loaded; retryLoad() tries again */
@@ -52,10 +57,11 @@ interface State {
   recovered: boolean;
   /** what is actually stored, never the converted view */
   stored: Data;
+  saved: SavedExercise[];
 }
 
-const SIGNED_OUT: State = { userId: null, ready: false, loadFailed: false, saveFailed: false, recovered: false, stored: EMPTY_DATA };
-const LOADING: Snapshot = { ready: false, data: EMPTY_DATA, recovered: false, loadFailed: false, saveFailed: false };
+const SIGNED_OUT: State = { userId: null, ready: false, loadFailed: false, saveFailed: false, recovered: false, stored: EMPTY_DATA, saved: [] };
+const LOADING: Snapshot = { ready: false, data: EMPTY_DATA, saved: [], recovered: false, loadFailed: false, saveFailed: false };
 
 let state: State = SIGNED_OUT;
 let cacheFor: State | null = null;
@@ -70,7 +76,7 @@ function getSnapshot(): Snapshot {
   const shown: Data = unit
     ? { ...data, workouts: workoutsIn(data.workouts, unit), weights: weightsIn(data.weights, unit), checkins: checkinsIn(data.checkins, unit) }
     : data;
-  cache = { ready: state.ready, data: shown, recovered: state.recovered, loadFailed: state.loadFailed, saveFailed: state.saveFailed };
+  cache = { ready: state.ready, data: shown, saved: state.saved, recovered: state.recovered, loadFailed: state.loadFailed, saveFailed: state.saveFailed };
   return cache;
 }
 
@@ -147,14 +153,17 @@ export function disconnect() {
   listeners.forEach((l) => l());
 }
 
-async function fetchAll(client: SupabaseClient): Promise<Loaded> {
-  const [p, w, c] = await Promise.all([
+async function fetchAll(client: SupabaseClient): Promise<Loaded & { saved: SavedExercise[] }> {
+  const [p, w, c, s] = await Promise.all([
     client.from("profiles").select(PROFILE_COLUMNS).maybeSingle(),
     client.from("workouts").select(WORKOUT_COLUMNS).order("date"),
     client.from("checkins").select(CHECKIN_COLUMNS).order("date"),
+    client.from("saved_exercises").select(SAVED_COLUMNS).order("saved_at", { ascending: false }),
   ]);
-  [p, w, c].forEach(ok);
-  return fromRows((p.data as ProfileRow | null) ?? null, (w.data as WorkoutRow[] | null) ?? [], (c.data as CheckinRow[] | null) ?? []);
+  [p, w, c, s].forEach(ok);
+  const loaded = fromRows((p.data as ProfileRow | null) ?? null, (w.data as WorkoutRow[] | null) ?? [], (c.data as CheckinRow[] | null) ?? []);
+  const saved = parseSaved((s.data as unknown[] | null) ?? []);
+  return { ...loaded, recovered: loaded.recovered || saved.dropped > 0, saved: saved.saved };
 }
 
 async function load() {
@@ -165,7 +174,7 @@ async function load() {
   try {
     const loaded = await fetchAll(client);
     if (s !== session || (state.ready && e !== edits)) return;
-    set({ ready: true, loadFailed: false, stored: loaded.data, recovered: loaded.recovered });
+    set({ ready: true, loadFailed: false, stored: loaded.data, saved: loaded.saved, recovered: loaded.recovered });
   } catch (err) {
     if (s !== session) return;
     console.error("Loading from Supabase failed:", messageOf(err));
@@ -224,6 +233,12 @@ function commit(stored: Data, ...ops: Op[]) {
   ops.forEach(enqueue);
 }
 
+function commitSaved(saved: SavedExercise[], op: Op) {
+  edits++;
+  set({ saved });
+  enqueue(op);
+}
+
 /* ---- writes: each one is safe to repeat ---- */
 
 const saveProfile: Op = async (c) => {
@@ -239,7 +254,11 @@ const dropAll: Op = async (c) => {
   ok(await c.from("workouts").delete().not("id", "is", null));
   ok(await c.from("checkins").delete().not("id", "is", null));
   ok(await c.from("profiles").delete().not("user_id", "is", null));
+  ok(await c.from("saved_exercises").delete().not("wger_id", "is", null));
 };
+const putSaved = (s: SavedExercise): Op => async (c) => ok(await c.from("saved_exercises").upsert(savedRow(s), { onConflict: "user_id,wger_id" }));
+const dropSaved = (wgerId: number): Op => async (c) => ok(await c.from("saved_exercises").delete().eq("wger_id", wgerId));
+const putNote = (wgerId: number, note: string): Op => async (c) => ok(await c.from("saved_exercises").update({ note }).eq("wger_id", wgerId));
 
 /** Row ids are uuids, and they are global, so every new row gets a fresh one. */
 function newId(): string {
@@ -320,10 +339,37 @@ export function saveNutrition(profile: NutritionProfile | null) {
   commit({ ...d, nutrition: profile }, saveProfile);
 }
 
-/** Erase this person's plan, workouts, check-ins and weights from their account. */
+/** Erase this person's plan, workouts, check-ins, weights and saved exercises from their account. */
 export function resetAll() {
   clearInProgress();
-  commit(EMPTY_DATA, dropAll);
+  edits++;
+  set({ stored: EMPTY_DATA, saved: [] });
+  enqueue(dropAll);
+}
+
+/* ---- the exercise library: saved exercises ---- */
+
+export function saveExercise(ex: WgerExercise) {
+  if (state.saved.some((s) => s.wgerId === ex.id)) return;
+  const s = savedFrom(ex, Date.now());
+  commitSaved([s, ...state.saved], putSaved(s));
+}
+
+/** Remove a saved exercise and hand back exactly what was stored, so it can be restored. */
+export function removeSaved(wgerId: number): SavedExercise | null {
+  const removed = state.saved.find((s) => s.wgerId === wgerId) ?? null;
+  if (removed) commitSaved(state.saved.filter((s) => s.wgerId !== wgerId), dropSaved(wgerId));
+  return removed;
+}
+
+export function restoreSaved(s: SavedExercise) {
+  if (state.saved.some((x) => x.wgerId === s.wgerId)) return;
+  commitSaved([...state.saved, s].sort((a, b) => b.savedAt - a.savedAt), putSaved(s));
+}
+
+export function setSavedNote(wgerId: number, note: string) {
+  if (!state.saved.some((s) => s.wgerId === wgerId)) return;
+  commitSaved(state.saved.map((s) => (s.wgerId === wgerId ? { ...s, note } : s)), putNote(wgerId, note));
 }
 
 /** The stored data as a downloadable backup (weights in the unit each was entered in). */

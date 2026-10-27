@@ -165,7 +165,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
           Your data
         </h2>
         <p className="mb-4 mt-2 max-w-prose text-muted">
-          Your plan, workouts and check-ins are saved to your account, and only you can see them. You can download a copy any time, or
+          Your plan, workouts, check-ins and saved exercises are saved to your account, and only you can see them. You can download a copy any time, or
           restore one (including a backup from the earlier, device-only Ironlog).
         </p>
         <BackupPanel sessionCount={count} />
@@ -180,7 +180,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       <ConfirmDialog
         open={confirmReset}
         title="Erase all your data?"
-        body={`This deletes your plan, ${count} saved ${count === 1 ? "workout" : "workouts"}, your check-ins and your remembered weights from your account. It can't be undone.`}
+        body={`This deletes your plan, ${count} saved ${count === 1 ? "workout" : "workouts"}, your check-ins, your remembered weights and your saved exercises from your account. It can't be undone.`}
         confirmLabel="Erase everything"
         onCancel={() => setConfirmReset(false)}
         onConfirm={() => {
