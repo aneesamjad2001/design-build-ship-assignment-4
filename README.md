@@ -112,6 +112,28 @@ in two dedicated Clerk test users (`+clerk_test` addresses, development instance
 
 Both test users' rows are wiped before and after each run.
 
+**Watched failing first** (as the brief asks), on Oct 27, with two migrations in
+`supabase/migrations/`:
+
+1. `…_break_rls_on_purpose.sql` changed the "read own rows" policy on `saved_exercises` to
+   `using (true)`: any signed-in person could read everyone's saved exercises.
+2. The test **failed** at step 3, *B's app shows none of A's data*:
+   ```
+   ✓ a signed-out visitor sees no one's data
+   ✓ A picks a look and saves an exercise with a note
+   ✘ B's app shows none of A's data
+       > await expect(page.getByText("Nothing saved yet.")).toBeVisible();
+       Error: element(s) not found   (B's list showed A's saved exercise)
+   1 failed, 2 passed (the rest didn't run)
+   ```
+3. `…_restore_rls.sql` put back `using (user_id = (select public.requesting_user_id()))`,
+   and the test **passed** again: 5 passed. The policy was open for about two minutes,
+   with only the author's and the test users' data in the database.
+
+In one sentence: with the policy's `using` clause set to `true`, Postgres stopped
+filtering rows by the token's user, so B's own query returned A's row and B's screen
+showed it.
+
 ## Carried over from Assignment 3: changes from TA feedback
 
 - **"How are you feeling?" now visibly changes today's workout**, including the first
