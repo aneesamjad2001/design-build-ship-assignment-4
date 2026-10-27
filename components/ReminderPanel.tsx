@@ -7,7 +7,7 @@ import { Field, FieldError, Input } from "./Field";
 import { WEEKDAYS, buildCalendar, isTime, suggestedDays } from "@/lib/ics";
 
 const tile =
-  "group flex min-h-12 cursor-pointer items-center justify-center border-2 border-field bg-surface px-1 font-display text-lg font-extrabold uppercase tracking-wide transition-colors hover:border-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-accent-ink has-[:focus-visible]:transition-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent";
+  "group flex min-h-12 cursor-pointer items-center justify-center border-2 border-field bg-surface px-1 text-lg font-semibold transition-colors hover:border-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-on-ink has-[:focus-visible]:transition-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus";
 
 /**
  * Ironlog has no server, so it can't push notifications. Your calendar can: this

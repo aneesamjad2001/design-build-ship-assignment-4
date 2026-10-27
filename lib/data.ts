@@ -1,6 +1,6 @@
-/** What gets saved, and loading it defensively. Browser storage can hold anything
- *  (old versions, hand edits, a half-written value), so everything is validated on
- *  the way in and anything dropped is reported — never a crash. */
+/** What gets saved, and loading it defensively. A backup file or a jsonb column can
+ *  hold anything (old versions, hand edits, a half-written value), so everything is
+ *  validated on the way in and anything dropped is reported — never a crash. */
 
 import { isDateString } from "./dates.ts";
 import { getExercise } from "./library.ts";
@@ -13,7 +13,6 @@ import { CHECKIN_FIELDS } from "./checkin.ts";
 import type { Checkin } from "./checkin.ts";
 import type { NutritionProfile } from "./nutrition.ts";
 
-export const STORAGE_KEY = "ironlog:v2";
 export const MAX_WEIGHT = 1000;
 export const MAX_NOTE = 500;
 
@@ -116,7 +115,7 @@ export interface Loaded {
   recovered: boolean;
 }
 
-/** Turn whatever was in storage into valid data. Never throws. */
+/** Turn a stored string (a backup file) into valid data. Never throws. */
 export function parseData(raw: string | null): Loaded {
   if (raw === null || raw === "") return { data: EMPTY_DATA, recovered: false };
   let json: unknown;
@@ -125,6 +124,11 @@ export function parseData(raw: string | null): Loaded {
   } catch {
     return { data: EMPTY_DATA, recovered: true };
   }
+  return parseDataObject(json);
+}
+
+/** Turn already-parsed JSON (a backup, or rows from the database) into valid data. Never throws. */
+export function parseDataObject(json: unknown): Loaded {
   if (!isObj(json) || json.version !== 2) return { data: EMPTY_DATA, recovered: true };
 
   const profile = json.profile === null || json.profile === undefined ? null : parseProfile(json.profile);

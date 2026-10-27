@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Ironlog — your gym coach",
     short_name: "Ironlog",
-    description: "Pick a goal, get today's workout, log your lifts, and see what to train next. Saved on your device.",
+    description: "Pick a goal, get today's workout, log your lifts, and see what to train next. Saved to your account.",
     start_url: "/",
     scope: "/",
     display: "standalone",

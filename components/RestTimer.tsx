@@ -76,10 +76,10 @@ export function RestTimer({ request, className = "bottom-14 md:bottom-0" }: { re
   return (
     <section aria-label="Rest timer" className={`fixed inset-x-0 z-20 ${className}`}>
       <div className="mx-auto max-w-2xl px-3 pb-2">
-        <div className="relative overflow-hidden border-2 border-line bg-raised p-2 shadow-lg shadow-black/60">
+        <div className="relative overflow-hidden border-2 border-line bg-raised p-2 shadow-[0_8px_24px_var(--backdrop)]">
           {phase.kind === "idle" && (
             <div className="flex items-center gap-2">
-              <span className="px-1 font-display text-lg font-bold uppercase tracking-wider text-muted">Rest</span>
+              <span className="px-1 text-lg font-semibold text-muted">Rest</span>
               <div className="grid flex-1 grid-cols-4 gap-2">
                 {PRESETS.map((s) => (
                   <Button key={s} variant="secondary" onClick={() => start(s)} aria-label={`Start a ${clock(s)} rest`} className="!min-h-11 !px-0 !text-base">
@@ -109,7 +109,7 @@ export function RestTimer({ request, className = "bottom-14 md:bottom-0" }: { re
 
           {phase.kind === "done" && (
             <div className="flex items-center justify-between gap-3">
-              <p className="px-1 font-display text-2xl font-extrabold uppercase tracking-wide">Rest over — next set</p>
+              <p className="px-1 font-display text-2xl font-extrabold">Rest over — next set</p>
               <Button variant="secondary" onClick={() => setPhase({ kind: "idle" })} className="!min-h-11 !text-base">
                 Dismiss
               </Button>

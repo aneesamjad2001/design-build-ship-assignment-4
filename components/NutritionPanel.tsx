@@ -10,7 +10,7 @@ import type { Activity, NutritionErrors, NutritionForm, NutritionProfile } from 
 import { saveNutrition } from "@/lib/store";
 
 const radio =
-  "flex min-h-12 cursor-pointer items-center gap-3 border-2 border-field bg-surface px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-accent-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent";
+  "flex min-h-12 cursor-pointer items-center gap-3 border-2 border-field bg-surface px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-on-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus";
 
 const kcal = (n: number) => n.toLocaleString("en-US");
 
@@ -98,7 +98,7 @@ export function NutritionPanel({ unit, lookId, saved }: { unit: Unit; lookId: Lo
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
       <p className="text-sm text-muted">
-        Skip this if counting calories isn&apos;t for you, or if it&apos;s been stressful in the past. For adults 18 and over. Saved on this device only.
+        Skip this if counting calories isn&apos;t for you, or if it&apos;s been stressful in the past. For adults 18 and over. Saved to your account; only you can see it.
       </p>
       <Field id="nutrition-age" label="Age" error={errors.age}>
         {(p) => <Input {...p} inputMode="numeric" autoComplete="off" value={form.age} invalid={!!errors.age} onChange={(e) => set("age", e.target.value)} className="max-w-40" />}

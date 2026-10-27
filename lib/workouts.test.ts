@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { EXERCISES, getExercise } from "./library.ts";
 import { LOOKS, getLook } from "./looks.ts";
-import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, planOverview, reentry } from "./workouts.ts";
+import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, describeFeeling, planOverview, reentry } from "./workouts.ts";
+import type { BuildContext } from "./workouts.ts";
 
 const look = (id: string) => getLook(id)!;
 const ids = (w: ReturnType<typeof buildWorkout>) => w.exercises.map((e) => e.exerciseId);
@@ -113,12 +114,14 @@ describe("adjustments", () => {
     assert.ok(normal.exercises.some((e) => e.sets === 3));
     assert.ok(back.notes.some((n) => /easing in/i.test(n)));
   });
-  it("tired means shorter and lighter, with the reason shown", () => {
+  it("tired means shorter and lighter: fewer sets, fewer reps, no extras", () => {
     const normal = buildWorkout(l, "A", "standard");
     const tired = buildWorkout(l, "A", "standard", { feeling: "tired" });
     assert.ok(tired.exercises.length < normal.exercises.length);
     assert.ok(tired.minutes < normal.minutes);
-    assert.ok(tired.notes.some((n) => /tired/i.test(n)));
+    const squat = (w: typeof normal) => w.exercises.find((e) => e.exerciseId === "goblet-squat")!;
+    assert.deepEqual([squat(normal).sets, squat(normal).min, squat(normal).max], [3, 8, 12]);
+    assert.deepEqual([squat(tired).sets, squat(tired).min, squat(tired).max], [2, 8, 10]);
   });
   it("skipped exercises come back as labelled make-ups, but not in a short session", () => {
     const w = buildWorkout(l, "B", "standard", { makeUps: ["leg-curl"] });
@@ -128,5 +131,62 @@ describe("adjustments", () => {
   it("a swap replaces the exercise in place", () => {
     const w = buildWorkout(l, "A", "standard", { swaps: { "goblet-squat": "leg-press" } });
     assert.equal(w.exercises[0].exerciseId, "leg-press");
+  });
+});
+
+describe("how are you feeling?", () => {
+  const sig = (w: ReturnType<typeof buildWorkout>) => w.exercises.map((e) => `${e.exerciseId}:${e.sets}:${e.min}-${e.max}`).join();
+  const totalSets = (w: ReturnType<typeof buildWorkout>) => w.exercises.reduce((n, e) => n + e.sets, 0);
+  const volume = (w: ReturnType<typeof buildWorkout>) => w.exercises.reduce((n, e) => n + e.sets * e.max, 0);
+  const situations: [string, BuildContext][] = [
+    ["first workout", { intro: true }],
+    ["regular", { daysAway: 3 }],
+    ["back after 6 weeks", { daysAway: 42 }],
+  ];
+
+  for (const [label, ctx] of situations) {
+    it(`every answer visibly changes the workout (${label}, every look, workout and length)`, () => {
+      for (const l of LOOKS) for (const k of WORKOUT_KEYS) for (const t of TIME_OPTIONS) {
+        const normal = buildWorkout(l, k, t, { ...ctx, feeling: "normal" });
+        const tired = buildWorkout(l, k, t, { ...ctx, feeling: "tired" });
+        const fresh = buildWorkout(l, k, t, { ...ctx, feeling: "fresh" });
+        const where = `${l.id} ${k} ${t}`;
+        assert.notEqual(sig(tired), sig(normal), `tired changes ${where}`);
+        assert.notEqual(sig(fresh), sig(normal), `fresh changes ${where}`);
+        assert.ok(volume(tired) < volume(normal) && totalSets(tired) <= totalSets(normal) && tired.minutes <= normal.minutes, `tired is less ${where}`);
+        assert.ok(totalSets(fresh) > totalSets(normal), `fresh is more ${where}`);
+        // fresh stays within the chosen length: at most two extra sets, same exercises
+        assert.ok(totalSets(fresh) - totalSets(normal) <= 2, `fresh is only a bit more ${where}`);
+        assert.equal(ids(fresh).join(), ids(normal).join());
+        assert.ok(fresh.minutes - normal.minutes <= 5, `fresh adds at most ~5 min ${where}`);
+        for (const e of fresh.exercises) assert.ok(e.sets <= (l.style === "strength" ? 5 : 4), `fresh cap ${where}`);
+        for (const e of tired.exercises) assert.ok(e.sets >= 1 && e.max >= e.min, `tired stays sane ${where}`);
+      }
+    });
+  }
+
+  it("the first workout: tired trims the reps and drops the extra core move", () => {
+    const l = look("balanced");
+    const normal = buildWorkout(l, "A", "standard", { intro: true });
+    const tired = buildWorkout(l, "A", "standard", { intro: true, feeling: "tired" });
+    assert.ok(ids(normal).includes("plank") && !ids(tired).includes("plank"));
+    assert.ok(tired.exercises.every((e) => e.sets === 2));
+    assert.equal(tired.exercises[0].max, normal.exercises[0].max - 2);
+  });
+
+  it("says exactly what changed, compared with normal", () => {
+    const l = look("balanced");
+    const normal = buildWorkout(l, "A", "standard");
+    const tired = buildWorkout(l, "A", "standard", { feeling: "tired" });
+    const fresh = buildWorkout(l, "A", "standard", { feeling: "fresh" });
+    const t = describeFeeling("tired", normal, tired, { lighterWeights: true });
+    assert.match(t, /^Tired: 2 sets instead of 3/);
+    assert.match(t, /8–10 reps instead of 8–12/);
+    assert.match(t, /skips Plank/);
+    assert.match(t, /weights about 10% lighter/);
+    assert.match(t, new RegExp(`about ${tired.minutes} min instead of ${normal.minutes}`));
+    const f = describeFeeling("fresh", normal, fresh);
+    assert.match(f, /^Fresh: 4 sets instead of 3 on Goblet squat and Dumbbell bench press/);
+    assert.match(describeFeeling("normal", normal, normal), /^Normal:/);
   });
 });

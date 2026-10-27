@@ -1,19 +1,92 @@
 @import "tailwindcss";
 
-/* Iron — near-black concrete, safety yellow reserved for the one action that
-   matters on a screen (and the focus ring). Contrast was computed, not eyeballed:
-   text 14–18:1, muted ≥ 6.6:1, ink on yellow 13.8:1, field borders ≥ 5:1. */
+/* Iron — concrete and safety yellow. Yellow is reserved for the one action that
+   matters on a screen and for the focus ring.
+
+   Two themes. Dark is the base; light applies when chosen in the header
+   (data-theme="light" on <html>, set before paint by the script in
+   app/layout.tsx) or when nothing is chosen and the system prefers light.
+   The two light blocks must stay identical.
+
+   Contrast is computed, not eyeballed, in both themes: body text at least
+   12:1 and muted text at least 5.8:1 on every background, labels on yellow at
+   least 10:1, field borders, focus ring and the light-mode button edge at
+   least 3:1. In light mode yellow stays a button fill with dark text; the ring
+   and the button's edge use a dark ochre, because yellow on near-white is
+   only about 1.4:1. */
 :root {
-  --bg: #0d0d0d;
-  --surface: #171717;
-  --raised: #222222;
+  --bg: #0f0f0f;
+  --surface: #181818;
+  --raised: #242424;
   --line: #3b3b3b;
   --field: #8a8a84;
-  --text: #f5f5f2;
+  --text: #ebebe6;
   --muted: #a8a8a2;
   --accent: #ffd60a;
+  --accent-hover: #ffe45c;
+  --accent-active: #e6c200;
+  --accent-edge: #ffd60a;
   --accent-ink: #0d0d0d;
+  --focus: #ffd60a;
+  /* text on an ink fill (a selected choice): the ink colour inverted */
+  --on-ink: #111111;
+  --on-ink-muted: #3a3a37;
   --error: #ff8a7a;
+  --on-error: #0d0d0d;
+  --hazard-a: #2b2b2b;
+  --hazard-b: #141414;
+  --backdrop: rgba(0, 0, 0, 0.72);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f2f1ed;
+  --surface: #fafaf8;
+  --raised: #e8e7e2;
+  --line: #d2d1ca;
+  --field: #767670;
+  --text: #1f1f1c;
+  --muted: #57574f;
+  --accent: #ffd60a;
+  --accent-hover: #ffe14d;
+  --accent-active: #f0c800;
+  --accent-edge: #8c7000;
+  --accent-ink: #1a1a17;
+  --focus: #806600;
+  --on-ink: #f7f7f4;
+  --on-ink-muted: #c4c4bd;
+  --error: #b3261e;
+  --on-error: #ffffff;
+  --hazard-a: #d6d5ce;
+  --hazard-b: #eae9e4;
+  --backdrop: rgba(20, 20, 18, 0.45);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f2f1ed;
+    --surface: #fafaf8;
+    --raised: #e8e7e2;
+    --line: #d2d1ca;
+    --field: #767670;
+    --text: #1f1f1c;
+    --muted: #57574f;
+    --accent: #ffd60a;
+    --accent-hover: #ffe14d;
+    --accent-active: #f0c800;
+    --accent-edge: #8c7000;
+    --accent-ink: #1a1a17;
+    --focus: #806600;
+    --on-ink: #f7f7f4;
+    --on-ink-muted: #c4c4bd;
+    --error: #b3261e;
+    --on-error: #ffffff;
+    --hazard-a: #d6d5ce;
+    --hazard-b: #eae9e4;
+    --backdrop: rgba(20, 20, 18, 0.45);
+    color-scheme: light;
+  }
 }
 
 @theme inline {
@@ -25,8 +98,15 @@
   --color-ink: var(--text);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-edge: var(--accent-edge);
   --color-accent-ink: var(--accent-ink);
+  --color-focus: var(--focus);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-muted: var(--on-ink-muted);
   --color-danger: var(--error);
+  --color-on-danger: var(--on-error);
   --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
   /* numerals: the same heavy condensed face, which stays legible at a glance */
   --font-stencil: var(--font-big-shoulders), "Arial Narrow", sans-serif;
@@ -35,7 +115,6 @@
 
 html {
   background: var(--bg);
-  color-scheme: dark;
 }
 
 body {
@@ -45,10 +124,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* One focus treatment everywhere: a 2px yellow ring, offset so it never
-   touches the control. */
+/* One focus treatment everywhere: a 2px ring (yellow in dark, dark ochre in
+   light), offset so it never touches the control. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
   /* focus must show instantly — never fade a ring in */
   transition: none;
@@ -65,8 +144,8 @@ main h1:focus {
 .hazard {
   background-image: repeating-linear-gradient(
     -45deg,
-    #2b2b2b 0 8px,
-    #141414 8px 16px
+    var(--hazard-a) 0 8px,
+    var(--hazard-b) 8px 16px
   );
 }
 
@@ -94,7 +173,7 @@ dialog.sheet {
   color: var(--text);
 }
 dialog.sheet::backdrop {
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--backdrop);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -103,6 +182,22 @@ dialog.sheet::backdrop {
   }
   .plate-in {
     animation: plate-in 0.35s ease-out both;
+  }
+  .changed {
+    animation: changed-in 0.7s ease-out;
+  }
+}
+/* A number that differs from the normal plan (e.g. after "Tired"): a quiet
+   raised background that stays, with a brief brighter flash when it changes. */
+.changed {
+  background: var(--raised);
+}
+@keyframes changed-in {
+  from {
+    background: var(--line);
+  }
+  to {
+    background: var(--raised);
   }
 }
 @keyframes sheet-in {

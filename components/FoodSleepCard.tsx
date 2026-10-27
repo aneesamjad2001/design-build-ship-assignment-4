@@ -9,14 +9,14 @@ const TIPS = [
 export function FoodSleepCard() {
   return (
     <section aria-labelledby="food-sleep" className="border border-line bg-surface p-5">
-      <h2 id="food-sleep" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+      <h2 id="food-sleep" className="font-display text-3xl font-extrabold">
         Food and sleep
       </h2>
       <p className="mt-1 text-muted">The half of the result that happens outside the gym. Nothing to track.</p>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {TIPS.map(([title, text]) => (
           <li key={title} className="border-l-4 border-ink bg-raised px-4 py-3">
-            <p className="font-display text-xl font-extrabold uppercase tracking-wide">{title}</p>
+            <p className="font-display text-xl font-extrabold">{title}</p>
             <p className="mt-1 text-sm text-muted">{text}</p>
           </li>
         ))}

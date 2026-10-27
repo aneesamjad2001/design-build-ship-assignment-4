@@ -108,7 +108,7 @@ function StaticPose({ pose, label }: { pose: Pose; label: string }) {
       <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} width="100%" className="block h-auto w-full">
         <FigureShapes solved={solvePose(pose)} />
       </svg>
-      <figcaption className="text-center text-xs font-semibold tracking-wide text-muted">{label}</figcaption>
+      <figcaption className="text-center text-sm font-semibold text-muted">{label}</figcaption>
     </figure>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Banner } from "./Banner";
@@ -51,7 +52,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="font-display text-5xl font-black uppercase leading-none tracking-wide">Your plan</h1>
+        <h1 className="font-display text-5xl font-black leading-none">Your plan</h1>
         <p className="mt-2 text-muted">Change your look any time. Your history and remembered weights stay.</p>
       </header>
 
@@ -66,26 +67,36 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
         />
 
         <section aria-labelledby="workouts" className="border border-line bg-surface p-5">
-          <h2 id="workouts" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+          <h2 id="workouts" className="font-display text-3xl font-extrabold">
             Your three workouts
           </h2>
-          <p className="mt-1 text-sm text-muted">
-            For {preview.name}: {preview.description} Do the next one whenever you go; every workout trains your whole body, so a missed week leaves no gap.
+          <p className="mt-1 text-muted">
+            For {preview.name}: {preview.description} Every workout trains your whole body, so a missed week leaves no gap.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <p className="mt-2 text-muted">
+            They rotate A → B → C, and Today always shows the next one. Want a different one today? Pick it under &ldquo;Your plan&rdquo; on{" "}
+            <Link href="/" className="font-semibold text-ink underline underline-offset-4">
+              Today
+            </Link>
+            .
+          </p>
+          {/* a plain overview, not a set of choices: no tile borders, nothing that looks pressable */}
+          <dl className="mt-4 grid gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-3">
             {planOverview(preview).map((p) => (
-              <div key={p.key} className="border border-line bg-raised p-3">
-                <p className="font-display text-xl font-extrabold uppercase tracking-wide">
-                  {workoutTitle(p.key)} <span className="font-body text-sm font-normal normal-case tracking-normal text-muted">~{p.minutes} min</span>
-                </p>
-                <ul className="mt-1 text-sm text-muted">
-                  {p.exercises.map((e) => (
-                    <li key={e.exerciseId}>{getExercise(e.exerciseId)?.name}</li>
-                  ))}
-                </ul>
+              <div key={p.key}>
+                <dt className="font-display text-2xl font-extrabold">
+                  {workoutTitle(p.key)} <span className="font-body text-base font-normal text-muted">· about {p.minutes} min</span>
+                </dt>
+                <dd>
+                  <ul className="mt-1 text-muted">
+                    {p.exercises.map((e) => (
+                      <li key={e.exerciseId}>{getExercise(e.exerciseId)?.name}</li>
+                    ))}
+                  </ul>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
         </section>
 
         <Segmented<Unit>
@@ -111,7 +122,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </form>
 
       <section aria-labelledby="honest" className="border-l-4 border-ink bg-surface p-5">
-        <h2 id="honest" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="honest" className="font-display text-3xl font-extrabold">
           What can training do?
         </h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
@@ -124,7 +135,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       <FoodSleepCard />
 
       <section aria-labelledby="nutrition" className="border border-line bg-surface p-5">
-        <h2 id="nutrition" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="nutrition" className="font-display text-3xl font-extrabold">
           Calorie and protein estimate
         </h2>
         <p className="mb-4 mt-1 text-muted">Optional. A rough daily starting point for your look, as a range. Nothing to log.</p>
@@ -132,7 +143,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </section>
 
       <section aria-labelledby="body" className="border border-line bg-surface p-5">
-        <h2 id="body" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="body" className="font-display text-3xl font-extrabold">
           Monthly body check-in
         </h2>
         <p className="mb-4 mt-1 text-muted">Optional. Note your weight or a few measurements once a month and see the trend on Progress.</p>
@@ -142,7 +153,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </section>
 
       <section aria-labelledby="reminders" className="border-t border-line pt-6">
-        <h2 id="reminders" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="reminders" className="font-display text-3xl font-extrabold">
           Training reminders
         </h2>
         <p className="mb-4 mt-2 max-w-prose text-muted">Want a nudge? Put a few gym slots on your calendar. Miss one and nothing breaks.</p>
@@ -150,12 +161,12 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </section>
 
       <section aria-labelledby="data" className="border-t border-line pt-6">
-        <h2 id="data" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="data" className="font-display text-3xl font-extrabold">
           Your data
         </h2>
         <p className="mb-4 mt-2 max-w-prose text-muted">
-          Everything lives in this browser on this device. There&apos;s no account and nothing is sent anywhere. Clearing your browser&apos;s site data
-          would erase it, so keep a backup.
+          Your plan, workouts, check-ins and saved exercises are saved to your account, and only you can see them. You can download a copy any time, or
+          restore one (including a backup from the earlier, device-only Ironlog).
         </p>
         <BackupPanel sessionCount={count} />
         <div className="mt-8 border-t border-line pt-5">
@@ -169,7 +180,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       <ConfirmDialog
         open={confirmReset}
         title="Erase all your data?"
-        body={`This deletes your plan, ${count} saved ${count === 1 ? "workout" : "workouts"}, your check-ins and your remembered weights from this device. It can't be undone.`}
+        body={`This deletes your plan, ${count} saved ${count === 1 ? "workout" : "workouts"}, your check-ins, your remembered weights and your saved exercises from your account. It can't be undone.`}
         confirmLabel="Erase everything"
         onCancel={() => setConfirmReset(false)}
         onConfirm={() => {

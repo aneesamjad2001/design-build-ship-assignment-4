@@ -1,124 +1,286 @@
 "use client";
 
 /**
- * Browser storage as a small external store. Reads are validated (see data.ts),
- * writes fall back to memory if the browser blocks storage, and other tabs stay in
- * sync through the `storage` event. Nothing leaves the device.
+ * Your data, from your account, as a small external store.
+ *
+ * Supabase is the source of truth. After sign-in, connect() loads this person's rows
+ * (row-level security returns only theirs) and screens read them through useIronlog().
+ * Changes show at once and are written in order behind the scenes; if a write fails it
+ * is kept, the app says so, and "Try again" re-sends it, so nothing typed is lost.
+ * Every write is safe to repeat (upserts by id, deletes by id).
  *
  * What is stored is never rewritten when the unit changes: every workout, weight
  * and check-in keeps the unit it was entered in, and is converted for display only.
  */
 
 import { useSyncExternalStore } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildBackup } from "./backup";
 import { checkinsIn } from "./checkin";
 import type { Checkin } from "./checkin";
 import { todayString } from "./dates";
-import { EMPTY_DATA, STORAGE_KEY, parseData, serialize, weightsIn, workoutsIn } from "./data";
-import type { Data, Profile } from "./data";
+import { EMPTY_DATA, weightsIn, workoutsIn } from "./data";
+import type { Data, Loaded, Profile } from "./data";
 import { updateBook } from "./adapt";
 import type { CompletedWorkout, Unit } from "./adapt";
+import { clearInProgress, keepOnlyInProgress, setInProgressOwner } from "./inprogress";
 import type { LookId } from "./looks";
 import type { NutritionProfile } from "./nutrition";
+import { CHECKIN_COLUMNS, PROFILE_COLUMNS, WORKOUT_COLUMNS, checkinRow, fromRows, profileRow, workoutRow } from "./rows";
+import { SAVED_COLUMNS, parseSaved, savedFrom, savedRow } from "./saved";
+import type { SavedExercise } from "./saved";
+import type { CheckinRow, ProfileRow, WorkoutRow } from "./rows";
+import { createSupabase } from "./supabase";
+import type { WgerExercise } from "./wger";
 import type { TimeOption } from "./workouts";
 
 export interface Snapshot {
-  /** false until the browser has been read (server render and first paint) */
+  /** false until this person's data has loaded (server render, first paint, signed out) */
   ready: boolean;
   /** what the app shows: weights and measurements converted to the profile's unit */
   data: Data;
+  /** exercises saved from the wger library, newest first */
+  saved: SavedExercise[];
+  /** something unreadable in the account was skipped */
   recovered: boolean;
-  /** false when the browser refused to save, so data lives only in this tab */
-  persistent: boolean;
+  /** the data couldn't be loaded; retryLoad() tries again */
+  loadFailed: boolean;
+  /** a change couldn't be saved; it is kept here and retrySaves() re-sends it */
+  saveFailed: boolean;
 }
 
-const LOADING: Snapshot = { ready: false, data: EMPTY_DATA, recovered: false, persistent: true };
+interface State {
+  userId: string | null;
+  ready: boolean;
+  loadFailed: boolean;
+  saveFailed: boolean;
+  recovered: boolean;
+  /** what is actually stored, never the converted view */
+  stored: Data;
+  saved: SavedExercise[];
+}
 
-let writeFailed = false;
-let memoryRaw: string | null = null;
-let cacheRaw: string | null | undefined;
+const SIGNED_OUT: State = { userId: null, ready: false, loadFailed: false, saveFailed: false, recovered: false, stored: EMPTY_DATA, saved: [] };
+const LOADING: Snapshot = { ready: false, data: EMPTY_DATA, saved: [], recovered: false, loadFailed: false, saveFailed: false };
+
+let state: State = SIGNED_OUT;
+let cacheFor: State | null = null;
 let cache: Snapshot = LOADING;
-/** what is actually stored */
-let cacheStored: Data = EMPTY_DATA;
 const listeners = new Set<() => void>();
 
-function readRaw(): string | null {
-  if (writeFailed) return memoryRaw;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    writeFailed = true;
-    return memoryRaw;
-  }
-}
-
 function getSnapshot(): Snapshot {
-  const raw = readRaw();
-  if (raw === cacheRaw && cache.ready) return cache;
-  cacheRaw = raw;
-  const { data, recovered } = parseData(raw);
-  cacheStored = data;
+  if (cacheFor === state) return cache;
+  cacheFor = state;
+  const data = state.stored;
   const unit = data.profile?.unit;
   const shown: Data = unit
     ? { ...data, workouts: workoutsIn(data.workouts, unit), weights: weightsIn(data.weights, unit), checkins: checkinsIn(data.checkins, unit) }
     : data;
-  cache = { ready: true, data: shown, recovered, persistent: !writeFailed };
+  cache = { ready: state.ready, data: shown, saved: state.saved, recovered: state.recovered, loadFailed: state.loadFailed, saveFailed: state.saveFailed };
   return cache;
 }
 
-function emit() {
+function set(patch: Partial<State>) {
+  state = { ...state, ...patch };
   listeners.forEach((l) => l());
 }
 
 function subscribe(cb: () => void): () => void {
   listeners.add(cb);
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === STORAGE_KEY || e.key === null) cb();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(cb);
-    window.removeEventListener("storage", onStorage);
-  };
+  return () => listeners.delete(cb);
 }
-
-function commit(data: Data) {
-  const raw = serialize(data);
-  memoryRaw = raw;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, raw);
-    writeFailed = false;
-  } catch {
-    writeFailed = true;
-  }
-  emit();
-}
-
-/** The stored data, for writing back. Never the converted view. */
-const current = (): Data => {
-  getSnapshot();
-  return cacheStored;
-};
 
 export function useIronlog(): Snapshot {
   return useSyncExternalStore(subscribe, getSnapshot, () => LOADING);
 }
 
+/** The stored data, for writing back. Never the converted view. */
+const current = (): Data => state.stored;
+
+/* ---- the connection to Supabase ---- */
+
+type Op = (db: SupabaseClient) => Promise<void>;
+
+let db: SupabaseClient | null = null;
+/** bumps on every sign-in and sign-out, so a late reply for the previous person is dropped */
+let session = 0;
+/** bumps on every local change, so a refresh that started before it never overwrites it */
+let edits = 0;
+let queue: Promise<void> = Promise.resolve();
+let pending = 0;
+/** writes that failed, in order; later writes wait behind them */
+let failed: Op[] = [];
+
+const ok = ({ error }: { error: unknown }) => {
+  if (error) throw error;
+};
+const messageOf = (e: unknown) => (e && typeof e === "object" && "message" in e ? String(e.message) : String(e));
+
+function resetConnection() {
+  session++;
+  failed = [];
+  pending = 0;
+  queue = Promise.resolve();
+}
+
+/** Called when Clerk reports who is signed in. Loads that person's data. */
+export function connect(userId: string, getToken: () => Promise<string | null>) {
+  if (state.userId === userId && db) return;
+  resetConnection();
+  setInProgressOwner(userId);
+  keepOnlyInProgress(userId);
+  try {
+    db = createSupabase(getToken);
+  } catch (e) {
+    db = null;
+    console.error(messageOf(e));
+    state = { ...SIGNED_OUT, userId, loadFailed: true };
+    listeners.forEach((l) => l());
+    return;
+  }
+  state = { ...SIGNED_OUT, userId };
+  listeners.forEach((l) => l());
+  void load();
+}
+
+/** Called on sign-out: forget everything held for the previous person, including in-progress drafts. */
+export function disconnect() {
+  resetConnection();
+  db = null;
+  setInProgressOwner(null);
+  keepOnlyInProgress(null);
+  state = SIGNED_OUT;
+  listeners.forEach((l) => l());
+}
+
+async function fetchAll(client: SupabaseClient): Promise<Loaded & { saved: SavedExercise[] }> {
+  const [p, w, c, s] = await Promise.all([
+    client.from("profiles").select(PROFILE_COLUMNS).maybeSingle(),
+    client.from("workouts").select(WORKOUT_COLUMNS).order("date"),
+    client.from("checkins").select(CHECKIN_COLUMNS).order("date"),
+    client.from("saved_exercises").select(SAVED_COLUMNS).order("saved_at", { ascending: false }),
+  ]);
+  [p, w, c, s].forEach(ok);
+  const loaded = fromRows((p.data as ProfileRow | null) ?? null, (w.data as WorkoutRow[] | null) ?? [], (c.data as CheckinRow[] | null) ?? []);
+  const saved = parseSaved((s.data as unknown[] | null) ?? []);
+  return { ...loaded, recovered: loaded.recovered || saved.dropped > 0, saved: saved.saved };
+}
+
+async function load() {
+  const client = db;
+  const s = session;
+  const e = edits;
+  if (!client) return;
+  try {
+    const loaded = await fetchAll(client);
+    if (s !== session || (state.ready && e !== edits)) return;
+    set({ ready: true, loadFailed: false, stored: loaded.data, saved: loaded.saved, recovered: loaded.recovered });
+  } catch (err) {
+    if (s !== session) return;
+    console.error("Loading from Supabase failed:", messageOf(err));
+    if (!state.ready) set({ loadFailed: true });
+  }
+}
+
+export function retryLoad() {
+  if (!db) return;
+  set({ loadFailed: false });
+  void load();
+}
+
+/** Pick up changes made in another tab or on another device, when nothing here is waiting to save. */
+export function refresh() {
+  if (db && state.ready && pending === 0 && failed.length === 0) void load();
+}
+
+function enqueue(op: Op) {
+  const client = db;
+  const s = session;
+  if (!client) return;
+  pending++;
+  queue = queue
+    .then(async () => {
+      if (s !== session) return;
+      if (failed.length > 0) {
+        failed.push(op);
+        return;
+      }
+      try {
+        await op(client);
+      } catch (err) {
+        if (s !== session) return;
+        console.error("Saving to Supabase failed:", messageOf(err));
+        failed.push(op);
+        set({ saveFailed: true });
+      }
+    })
+    .finally(() => {
+      if (s === session) pending--;
+    });
+}
+
+/** Re-send every change that failed, in the order it was made. */
+export function retrySaves() {
+  const ops = failed;
+  failed = [];
+  set({ saveFailed: false });
+  ops.forEach(enqueue);
+}
+
+function commit(stored: Data, ...ops: Op[]) {
+  edits++;
+  set({ stored });
+  ops.forEach(enqueue);
+}
+
+function commitSaved(saved: SavedExercise[], op: Op) {
+  edits++;
+  set({ saved });
+  enqueue(op);
+}
+
+/* ---- writes: each one is safe to repeat ---- */
+
+const saveProfile: Op = async (c) => {
+  const row = profileRow(current());
+  if (row) ok(await c.from("profiles").upsert(row, { onConflict: "user_id" }));
+};
+const putWorkout = (w: CompletedWorkout): Op => async (c) => ok(await c.from("workouts").upsert(workoutRow(w)));
+const dropWorkout = (id: string): Op => async (c) => ok(await c.from("workouts").delete().eq("id", id));
+const putCheckin = (x: Checkin): Op => async (c) => ok(await c.from("checkins").upsert(checkinRow(x)));
+const dropCheckin = (id: string): Op => async (c) => ok(await c.from("checkins").delete().eq("id", id));
+/** RLS limits a delete to the caller's rows; the filter is only there because the client requires one. */
+const dropAll: Op = async (c) => {
+  ok(await c.from("workouts").delete().not("id", "is", null));
+  ok(await c.from("checkins").delete().not("id", "is", null));
+  ok(await c.from("profiles").delete().not("user_id", "is", null));
+  ok(await c.from("saved_exercises").delete().not("wger_id", "is", null));
+};
+const putSaved = (s: SavedExercise): Op => async (c) => ok(await c.from("saved_exercises").upsert(savedRow(s), { onConflict: "user_id,wger_id" }));
+const dropSaved = (wgerId: number): Op => async (c) => ok(await c.from("saved_exercises").delete().eq("wger_id", wgerId));
+const putNote = (wgerId: number, note: string): Op => async (c) => ok(await c.from("saved_exercises").update({ note }).eq("wger_id", wgerId));
+
+/** Row ids are uuids, and they are global, so every new row gets a fresh one. */
 function newId(): string {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 /** First pick creates the profile; later picks just change the look. */
 export function chooseLook(lookId: LookId) {
   const d = current();
   const profile: Profile = d.profile ? { ...d.profile, lookId } : { lookId, time: "standard", unit: "lb", createdAt: Date.now() };
-  commit({ ...d, profile });
+  commit({ ...d, profile }, saveProfile);
 }
 
 export function updateProfile(patch: Partial<Pick<Profile, "time" | "unit">>) {
   const d = current();
   if (!d.profile) return;
-  commit({ ...d, profile: { ...d.profile, ...patch } });
+  commit({ ...d, profile: { ...d.profile, ...patch } }, saveProfile);
 }
 
 export function setTime(time: TimeOption) {
@@ -134,7 +296,7 @@ export function saveWorkout(w: Omit<CompletedWorkout, "id" | "createdAt" | "unit
   const d = current();
   const unit = d.profile?.unit ?? "lb";
   const workout: CompletedWorkout = { ...w, id: newId(), createdAt: Date.now(), unit };
-  commit({ ...d, workouts: [...d.workouts, workout], weights: updateBook(d.weights, workout) });
+  commit({ ...d, workouts: [...d.workouts, workout], weights: updateBook(d.weights, workout) }, putWorkout(workout), saveProfile);
   return workout;
 }
 
@@ -142,50 +304,72 @@ export function saveWorkout(w: Omit<CompletedWorkout, "id" | "createdAt" | "unit
 export function deleteWorkout(id: string): CompletedWorkout | null {
   const d = current();
   const removed = d.workouts.find((w) => w.id === id) ?? null;
-  commit({ ...d, workouts: d.workouts.filter((w) => w.id !== id) });
+  commit({ ...d, workouts: d.workouts.filter((w) => w.id !== id) }, dropWorkout(id));
   return removed;
 }
 
 export function restoreWorkout(w: CompletedWorkout) {
   const d = current();
   if (d.workouts.some((x) => x.id === w.id)) return;
-  commit({ ...d, workouts: [...d.workouts, w] });
+  commit({ ...d, workouts: [...d.workouts, w] }, putWorkout(w));
 }
 
 export function addCheckin(values: Omit<Checkin, "id" | "createdAt" | "unit">): Checkin {
   const d = current();
   const c: Checkin = { ...values, id: newId(), createdAt: Date.now(), unit: d.profile?.unit ?? "lb" };
-  commit({ ...d, checkins: [...d.checkins, c] });
+  commit({ ...d, checkins: [...d.checkins, c] }, putCheckin(c));
   return c;
 }
 
 export function deleteCheckin(id: string): Checkin | null {
   const d = current();
   const removed = d.checkins.find((c) => c.id === id) ?? null;
-  commit({ ...d, checkins: d.checkins.filter((c) => c.id !== id) });
+  commit({ ...d, checkins: d.checkins.filter((c) => c.id !== id) }, dropCheckin(id));
   return removed;
 }
 
 export function restoreCheckin(c: Checkin) {
   const d = current();
   if (d.checkins.some((x) => x.id === c.id)) return;
-  commit({ ...d, checkins: [...d.checkins, c] });
+  commit({ ...d, checkins: [...d.checkins, c] }, putCheckin(c));
 }
 
 export function saveNutrition(profile: NutritionProfile | null) {
   const d = current();
-  commit({ ...d, nutrition: profile });
+  commit({ ...d, nutrition: profile }, saveProfile);
 }
 
+/** Erase this person's plan, workouts, check-ins, weights and saved exercises from their account. */
 export function resetAll() {
-  memoryRaw = null;
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.localStorage.removeItem("ironlog:workout:v2");
-  } catch {
-    writeFailed = true;
-  }
-  emit();
+  clearInProgress();
+  edits++;
+  set({ stored: EMPTY_DATA, saved: [] });
+  enqueue(dropAll);
+}
+
+/* ---- the exercise library: saved exercises ---- */
+
+export function saveExercise(ex: WgerExercise) {
+  if (state.saved.some((s) => s.wgerId === ex.id)) return;
+  const s = savedFrom(ex, Date.now());
+  commitSaved([s, ...state.saved], putSaved(s));
+}
+
+/** Remove a saved exercise and hand back exactly what was stored, so it can be restored. */
+export function removeSaved(wgerId: number): SavedExercise | null {
+  const removed = state.saved.find((s) => s.wgerId === wgerId) ?? null;
+  if (removed) commitSaved(state.saved.filter((s) => s.wgerId !== wgerId), dropSaved(wgerId));
+  return removed;
+}
+
+export function restoreSaved(s: SavedExercise) {
+  if (state.saved.some((x) => x.wgerId === s.wgerId)) return;
+  commitSaved([...state.saved, s].sort((a, b) => b.savedAt - a.savedAt), putSaved(s));
+}
+
+export function setSavedNote(wgerId: number, note: string) {
+  if (!state.saved.some((s) => s.wgerId === wgerId)) return;
+  commitSaved(state.saved.map((s) => (s.wgerId === wgerId ? { ...s, note } : s)), putNote(wgerId, note));
 }
 
 /** The stored data as a downloadable backup (weights in the unit each was entered in). */
@@ -193,9 +377,22 @@ export function exportBackup(): string {
   return buildBackup(current());
 }
 
-/** Replace everything on this device with a validated backup. */
+/** Replace everything in the account with a validated backup. Rows get fresh ids:
+ *  a backup's ids may not be uuids, and the same file could be restored into two accounts. */
 export function restoreFromBackup(data: Data) {
-  commit(data);
+  const fresh: Data = {
+    ...data,
+    workouts: data.workouts.map((w) => ({ ...w, id: newId() })),
+    checkins: data.checkins.map((c) => ({ ...c, id: newId() })),
+  };
+  commit(fresh, async (c) => {
+    ok(await c.from("workouts").delete().not("id", "is", null));
+    ok(await c.from("checkins").delete().not("id", "is", null));
+    const row = profileRow(fresh);
+    if (row) ok(await c.from("profiles").upsert(row, { onConflict: "user_id" }));
+    if (fresh.workouts.length) ok(await c.from("workouts").upsert(fresh.workouts.map(workoutRow)));
+    if (fresh.checkins.length) ok(await c.from("checkins").upsert(fresh.checkins.map(checkinRow)));
+  });
 }
 
 /* "Today" that stays right when a tab is left open, including past midnight. */

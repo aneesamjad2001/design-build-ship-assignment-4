@@ -3,8 +3,8 @@
 import { daysBetween } from "./dates.ts";
 import { getExercise } from "./library.ts";
 import type { Exercise } from "./library.ts";
-import { WORKOUT_KEYS, reentry } from "./workouts.ts";
-import type { WorkoutKey } from "./workouts.ts";
+import { WORKOUT_KEYS, feelingWeightFactor, reentry } from "./workouts.ts";
+import type { Feeling, WorkoutKey } from "./workouts.ts";
 
 export type Unit = "lb" | "kg";
 export type Feedback = "easy" | "right" | "hard";
@@ -96,15 +96,23 @@ export function weightStep(e: Exercise, unit: Unit): number {
 
 const roundTo = (n: number, step: number) => Math.round(n / step) * step;
 
-/** The weight to start with: what was last used, eased down after time away. Null = unknown. */
-export function suggestedWeight(exerciseId: string, book: WeightBook, daysAway: number | null | undefined, unit: Unit): number | null {
+/** The weight to start with: what was last used, eased down after time away or on a
+ *  tired day. Null = unknown. */
+export function suggestedWeight(
+  exerciseId: string,
+  book: WeightBook,
+  daysAway: number | null | undefined,
+  unit: Unit,
+  feeling?: Feeling,
+): number | null {
   const e = getExercise(exerciseId);
   const m = book[exerciseId];
   if (!e || !e.weighted || !m || m.unit !== unit) return null;
-  const factor = reentry(daysAway).weightFactor;
   const step = weightStep(e, unit);
-  // after a gap, always at least one step lighter (rounding alone could leave it unchanged)
-  const w = factor === 1 ? m.weight : Math.min(roundTo(m.weight * factor, step), m.weight - step);
+  // each easing (a gap, then a tired day) is always at least one step lighter:
+  // rounding alone could leave the weight unchanged
+  const ease = (from: number, factor: number) => (factor === 1 ? from : Math.min(roundTo(from * factor, step), from - step));
+  const w = ease(ease(m.weight, reentry(daysAway).weightFactor), feelingWeightFactor(feeling));
   return Math.max(0, w);
 }
 

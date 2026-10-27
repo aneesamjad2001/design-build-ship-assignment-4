@@ -80,7 +80,7 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onClose={onCancel} labelledBy="confirm-title">
       <div className="p-6">
-        <h2 id="confirm-title" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="confirm-title" className="font-display text-3xl font-extrabold">
           {title}
         </h2>
         <p className="mt-2 text-muted">{body}</p>
