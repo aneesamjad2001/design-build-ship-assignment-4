@@ -1,6 +1,8 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
-export default clerkMiddleware();
+// Our own sign-in/up pages, set here rather than in env vars: they aren't secrets, and
+// without them a deploy missing those vars sends people to Clerk's hosted page instead.
+export default clerkMiddleware({ signInUrl: "/sign-in", signUpUrl: "/sign-up" });
 
 export const config = {
   matcher: [
