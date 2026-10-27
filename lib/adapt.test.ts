@@ -28,6 +28,14 @@ describe("next workout", () => {
     assert.equal(after3Weeks.key, "C"); // no catching up, no debt
     assert.equal(after3Weeks.daysAway, 21);
   });
+  it("carries on from the workout actually done when a different one was picked", () => {
+    // A was done, so B was suggested, but C was picked and finished: next is A, after C
+    const r = nextWorkout([done(5, "A", 3), done(1, "C", 3)], TODAY);
+    assert.equal(r.key, "A");
+    assert.match(r.reason, /after Workout C/);
+    // picking the same one again moves on from it too
+    assert.equal(nextWorkout([done(5, "A", 3), done(1, "A", 3)], TODAY).key, "B");
+  });
   it("repeats a workout that was mostly unfinished", () => {
     const r = nextWorkout([done(2, "B", 1, 3)], TODAY);
     assert.equal(r.key, "B");
@@ -85,6 +93,13 @@ describe("weights", () => {
     assert.equal(suggestedWeight("push-up", book, 3, "lb"), null); // bodyweight
     assert.equal(suggestedWeight("hip-thrust", book, 3, "lb"), null); // never done
     assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "kg"), null); // other unit: ask again
+  });
+  it("suggests a lighter weight on a tired day, at least one step down; fresh and normal don't change it", () => {
+    const book: WeightBook = { "dumbbell-bench-press": { weight: 40, unit: "lb", rightStreak: 0, updatedAt: TODAY } };
+    assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "lb", "tired"), 35);
+    assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "lb", "fresh"), 40);
+    assert.equal(suggestedWeight("dumbbell-bench-press", book, 3, "lb", "normal"), 40);
+    assert.ok(suggestedWeight("dumbbell-bench-press", book, 40, "lb", "tired")! < suggestedWeight("dumbbell-bench-press", book, 40, "lb")!);
   });
   it("folds a finished workout into the book, ignoring skipped and unweighted work", () => {
     const w = done(0, "A", 3, 3, { exerciseId: "dumbbell-bench-press", weight: 40, feedback: "easy" });

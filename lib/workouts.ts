@@ -237,15 +237,8 @@ export function buildWorkout(look: Look, key: WorkoutKey, time: TimeOption, ctx:
     });
     notes.push(back.note);
   }
-  if (ctx.feeling === "tired" && !ctx.intro) {
-    list = list
-      .filter((p) => p.core || p.note)
-      .map((p) => {
-        const e = getExercise(p.exerciseId);
-        return e && e.measure !== "minutes" ? { ...p, sets: Math.max(2, p.sets - 1) } : p;
-      });
-    notes.push("You said you're tired, so today is shorter and a little lighter.");
-  }
+  // how they feel comes last, so it always shows (the line under the picker explains it)
+  list = applyFeeling(list, ctx.feeling ?? "normal", look.style);
 
   // 7. "not available" replacements chosen this session
   if (ctx.swaps) {
@@ -256,6 +249,103 @@ export function buildWorkout(look: Look, key: WorkoutKey, time: TimeOption, ctx:
   }
 
   return { key, lookId: look.id, time, exercises: list, minutes: minutesFor(list), notes };
+}
+
+/* ------------------------------------------------------------------ */
+/* How are you feeling? Every answer changes today's numbers.            */
+/* ------------------------------------------------------------------ */
+
+/** Tired: suggested weights are about this much lighter (always at least one step). */
+export const TIRED_WEIGHT_FACTOR = 0.9;
+
+export function feelingWeightFactor(feeling: Feeling | undefined): number {
+  return feeling === "tired" ? TIRED_WEIGHT_FACTOR : 1;
+}
+
+/** Fresh adds a set to this many main lifts. Two keeps the session close to the
+ *  length that was chosen (a set is about two minutes). */
+const FRESH_EXTRA_LIFTS = 2;
+
+/**
+ * The feeling rules. They run after time, intro and re-entry, so they always show,
+ * including on a first workout:
+ *  tired  → extras and finisher dropped, one set fewer (never below two), the top of
+ *           each rep range two lower (holds five seconds shorter); suggested weights
+ *           lighter via feelingWeightFactor
+ *  normal → unchanged
+ *  fresh  → one extra set on the first two main lifts that have room (up to 4 sets,
+ *           5 for strength); nothing else, so a good day doesn't become a long one
+ */
+export function applyFeeling(list: PlannedExercise[], feeling: Feeling, style: Style): PlannedExercise[] {
+  if (feeling === "tired") {
+    return list
+      .filter((p) => p.core || p.note)
+      .map((p) => {
+        const e = getExercise(p.exerciseId);
+        if (!e || e.measure === "minutes") return p;
+        const trim = e.measure === "seconds" ? 5 : 2;
+        return { ...p, sets: Math.max(2, p.sets - 1), max: Math.max(p.min, p.max - trim) };
+      });
+  }
+  if (feeling === "fresh") {
+    const cap = style === "strength" ? 5 : 4;
+    let given = 0;
+    return list.map((p) => {
+      const e = getExercise(p.exerciseId);
+      if (given >= FRESH_EXTRA_LIFTS || !p.core || !e || e.measure !== "reps" || p.sets >= cap) return p;
+      given++;
+      return { ...p, sets: p.sets + 1 };
+    });
+  }
+  return list;
+}
+
+const range = (p: PlannedExercise) => (p.min === p.max ? `${p.min}` : `${p.min}–${p.max}`);
+const nameOf = (id: string) => getExercise(id)?.name ?? id;
+
+function listNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/**
+ * One line saying exactly what the feeling changed, compared with the same workout
+ * at "normal", e.g. "Tired: 2 sets instead of 3, 8–10 reps instead of 8–12, skips Plank
+ * — about 25 min instead of 35."
+ */
+export function describeFeeling(feeling: Feeling, normal: PlannedWorkout, felt: PlannedWorkout, opts: { lighterWeights?: boolean } = {}): string {
+  if (feeling === "normal") return "Normal: today's workout as planned. Tired makes it shorter and lighter; fresh adds a set to two main lifts.";
+  const label = feeling === "tired" ? "Tired" : "Fresh";
+  const before = new Map(normal.exercises.map((p) => [p.exerciseId, p]));
+  const kept = new Set(felt.exercises.map((p) => p.exerciseId));
+
+  // group identical changes so the line stays short ("2 sets instead of 3")
+  const setChanges = new Map<string, string[]>();
+  const repChanges = new Map<string, string[]>();
+  const push = (m: Map<string, string[]>, k: string, name: string) => m.set(k, [...(m.get(k) ?? []), name]);
+  for (const p of felt.exercises) {
+    const n = before.get(p.exerciseId);
+    if (!n) continue;
+    if (n.sets !== p.sets) push(setChanges, `${p.sets} sets instead of ${n.sets}`, nameOf(p.exerciseId));
+    if (n.min !== p.min || n.max !== p.max) {
+      const unit = getExercise(p.exerciseId)?.measure === "seconds" ? "seconds" : "reps";
+      push(repChanges, `${range(p)} ${unit} instead of ${range(n)}`, nameOf(p.exerciseId));
+    }
+  }
+  // a change that applies to everything needs no names; a change to some exercises names them
+  const phrases = (m: Map<string, string[]>) =>
+    [...m].map(([k, names]) => (feeling === "tired" && m.size === 1 ? k : `${k} on ${listNames(names)}`));
+  // tired takes one set off every lift; when lifts started at different counts, say that once
+  const setPhrases = feeling === "tired" && setChanges.size > 1 ? ["one set fewer on each lift"] : phrases(setChanges);
+  const parts = [...setPhrases, ...phrases(repChanges)];
+
+  const dropped = normal.exercises.filter((p) => !kept.has(p.exerciseId)).map((p) => nameOf(p.exerciseId));
+  if (dropped.length) parts.push(`skips ${listNames(dropped)}`);
+  if (opts.lighterWeights) parts.push("suggested weights about 10% lighter");
+
+  if (parts.length === 0) return `${label}: same as normal today.`;
+  const time = felt.minutes !== normal.minutes ? ` — about ${felt.minutes} min instead of ${normal.minutes}` : "";
+  return `${label}: ${parts.join(", ")}${time}.`;
 }
 
 /** A "not available" replacement: the same slot, with the right sets and reps for the new movement. */

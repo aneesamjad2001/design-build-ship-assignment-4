@@ -4,7 +4,7 @@ import { ButtonLink } from "./Button";
 export function LoadingState() {
   return (
     <div aria-busy="true" role="status" className="py-16 text-center">
-      <p className="font-display text-3xl font-extrabold uppercase tracking-widest text-muted">Loading your training…</p>
+      <p className="text-xl text-muted">Loading your training…</p>
     </div>
   );
 }
@@ -13,7 +13,7 @@ export function LoadingState() {
 export function NeedsProfile({ what }: { what: string }) {
   return (
     <section className="border border-line bg-surface p-6">
-      <h1 className="font-display text-4xl font-extrabold uppercase tracking-wide">Pick a look first</h1>
+      <h1 className="font-display text-4xl font-extrabold">Pick a look first</h1>
       <p className="mt-2 text-muted">
         {what} Pick the kind of body you&apos;re aiming for. It takes one tap and you&apos;ll get today&apos;s workout right away.
       </p>

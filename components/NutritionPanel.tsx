@@ -10,7 +10,7 @@ import type { Activity, NutritionErrors, NutritionForm, NutritionProfile } from 
 import { saveNutrition } from "@/lib/store";
 
 const radio =
-  "flex min-h-12 cursor-pointer items-center gap-3 border-2 border-field bg-surface px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-accent-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent";
+  "flex min-h-12 cursor-pointer items-center gap-3 border-2 border-field bg-surface px-4 py-2 has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-on-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus";
 
 const kcal = (n: number) => n.toLocaleString("en-US");
 

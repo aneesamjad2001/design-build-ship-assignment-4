@@ -63,7 +63,7 @@ export function BackupPanel({ sessionCount }: { sessionCount: number }) {
             type="file"
             accept="application/json,.json"
             onChange={onFile}
-            className="w-full text-base text-ink file:mr-4 file:min-h-12 file:cursor-pointer file:border-2 file:border-ink file:bg-transparent file:px-4 file:py-2 file:font-display file:text-lg file:font-extrabold file:uppercase file:tracking-wider file:text-ink hover:file:bg-ink hover:file:text-accent-ink"
+            className="w-full text-base text-ink file:mr-4 file:min-h-12 file:cursor-pointer file:border-2 file:border-ink file:bg-transparent file:px-4 file:py-2 file:text-lg file:font-semibold file:text-ink hover:file:bg-ink hover:file:text-on-ink"
           />
         )}
       </Field>

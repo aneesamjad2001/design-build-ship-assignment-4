@@ -18,6 +18,22 @@ saved in the browser with `localStorage`.
   remembers what you did and the weights you used, picks the next workout, eases you
   back in after a gap, and never shows a broken streak or "you missed 3 days".
 
+## Changes from TA feedback
+
+- **"How are you feeling?" now visibly changes today's workout**, including the first
+  one. *Tired*: no extras or finisher, one set fewer (never below two), the top of each
+  rep range two lower, suggested weights ~10% lighter. *Fresh*: one extra set on the
+  first two main lifts. A line under the picker says exactly what changed against
+  *normal*, and changed numbers are highlighted with "normally 3 × 8–12".
+- **Workout A, B and C in "Your plan" on Today are selectable** (a radio group).
+  Picking one makes it today's workout; "Next up" still marks the rotation's
+  suggestion, with a button back to it. The rotation carries on from the workout
+  actually finished. On Plan they are a plain overview that says how they rotate.
+- **Softer type and a light theme.** Sentence case everywhere, Big Shoulders only
+  for headings and numbers, nothing under 14px. Light and dark themes follow the
+  device by default; a *Theme* button in the header switches System / Light / Dark
+  and remembers the choice. Contrast is computed for both themes (all WCAG AA).
+
 ## The flow
 
 > I pick the body I want → I see my first workout right away → I do it, one exercise
@@ -87,7 +103,8 @@ Plain rules, not AI, so the "why" on screen is always true (`lib/workouts.ts`,
    you go, you do the next one. Because each trains your whole body, a missed week
    leaves no gap.
 3. **It adapts to the visit:** a light intro the first time; *short / standard / long*;
-   *tired* drops the extras and a set; skipped exercises come back next time; a workout
+   *tired* drops the extras, a set and a couple of reps and suggests lighter weights,
+   *fresh* adds a set to two main lifts; skipped exercises come back next time; a workout
    less than half done is repeated.
 4. **It eases you back in:** 2–4 weeks away = one fewer set and ~10% lighter; 4–8 weeks
    = two sets, ~20% lighter; 8+ weeks = two sets, ~30% lighter.
@@ -127,11 +144,13 @@ new people (public sources only). Full notes: [`docs/research.md`](./docs/resear
 
 ## Design: "Iron"
 
-A gym should look like a gym: near-black concrete, caution-tape rules, heavy condensed
-uppercase type (Big Shoulders) with Barlow for reading.
+A gym should look like a gym: concrete, caution-tape rules, heavy condensed
+type (Big Shoulders) for headings and numbers, Barlow for everything else, sentence
+case throughout. Light and dark themes (tokens in `app/globals.css`).
 
 - **Safety yellow is reserved for the one primary action on a screen** and the focus
-  ring. Selected choices are a white fill, never yellow.
+  ring (a dark ochre ring in light mode, where yellow on white is too faint).
+  Selected choices are an ink fill, never yellow.
 - **Shared components** (`components/`): `Button`, `Field` (label + hint + error +
   control), `Input`/`Textarea`, `Segmented`, `LookPicker`, `Silhouette`, `Banner`,
   `Dialog`/`ConfirmDialog` (native `<dialog>`), `RestTimer`, `ExerciseFigure`,
@@ -152,7 +171,7 @@ problem (or to an error summary listing them).
 
 `localStorage` key `ironlog:v2` holds your look, workouts, remembered weights,
 check-ins and (if you asked for it) your estimate inputs; `ironlog:workout:v2` holds a
-workout in progress (expires after 24 h). Loading validates every field, so corrupt or
+workout in progress (expires after 24 h); `ironlog:theme` holds the theme choice. Loading validates every field, so corrupt or
 hand-edited data can't crash the app; unreadable parts are dropped and a notice says
 so. Weights keep the unit they were typed in and convert only for display. If the
 browser blocks storage, the app keeps working in memory and says it won't survive the tab.

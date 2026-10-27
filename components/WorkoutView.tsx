@@ -46,7 +46,7 @@ export function WorkoutView() {
 function NoWorkout() {
   return (
     <section className="border border-line bg-surface p-6">
-      <h1 className="font-display text-4xl font-extrabold uppercase tracking-wide">No workout in progress</h1>
+      <h1 className="font-display text-4xl font-extrabold">No workout in progress</h1>
       <p className="mt-2 text-muted">Start one from Today. It takes a single tap, and your place is saved as you go.</p>
       <div className="mt-5">
         <ButtonLink href="/" variant="primary">
@@ -181,7 +181,7 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
     const replacement = swapPlanned(cur, toId, look.style);
     if (!replacement) return;
     const from = cur.exerciseId;
-    const suggestion = suggestedWeight(toId, weights, daysAway, w.unit);
+    const suggestion = suggestedWeight(toId, weights, daysAway, w.unit, w.feeling);
     setW((c) => {
       const progress = { ...c.progress };
       delete progress[from];
@@ -214,7 +214,7 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
           w={w}
           cur={cur}
           hasDone={hasDoneExercise(workouts, cur.exerciseId)}
-          suggested={suggestedWeight(cur.exerciseId, weights, daysAway, w.unit)}
+          suggested={suggestedWeight(cur.exerciseId, weights, daysAway, w.unit, w.feeling)}
           error={weightError[cur.exerciseId]}
           canSwap={swapOptions.length > 0}
           onSet={tapSet}
@@ -244,7 +244,7 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
 
       <Dialog open={swapOpen && !!cur} onClose={() => setSwapOpen(false)} labelledBy="swap-title">
         <div className="p-6">
-          <h2 id="swap-title" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+          <h2 id="swap-title" className="font-display text-3xl font-extrabold">
             Swap {cur ? getExercise(cur.exerciseId)?.name : ""}
           </h2>
           <p className="mt-2 text-muted">Pick a replacement that trains the same thing. Today&apos;s plan updates to match.</p>
@@ -344,7 +344,7 @@ function ExerciseCard({
 
   const howTo = text ? (
     <details open={!hasDone} className="border border-line bg-surface">
-      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 font-display text-2xl font-extrabold uppercase tracking-wide [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-xl font-semibold [&::-webkit-details-marker]:hidden">
         How to do it
         <span aria-hidden className="text-muted">
           ▾
@@ -357,7 +357,7 @@ function ExerciseCard({
           {text.equipment}
         </p>
         <div>
-          <h2 className="font-display text-xl font-extrabold uppercase tracking-wide">Set up</h2>
+          <h2 className="font-display text-xl font-extrabold">Set up</h2>
           <ol className="mt-1 list-decimal space-y-1 pl-5">
             {text.setup.map((s) => (
               <li key={s}>{s}</li>
@@ -365,7 +365,7 @@ function ExerciseCard({
           </ol>
         </div>
         <div>
-          <h2 className="font-display text-xl font-extrabold uppercase tracking-wide">While you do it</h2>
+          <h2 className="font-display text-xl font-extrabold">While you do it</h2>
           <ul className="mt-1 list-disc space-y-1 pl-5">
             {text.cues.map((c) => (
               <li key={c}>{c}</li>
@@ -388,7 +388,7 @@ function ExerciseCard({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-display text-xl font-bold uppercase tracking-widest text-muted">
+        <p className="text-lg text-muted">
           {workoutTitle(w.planned.key)} · {w.index + 1} of {total}
         </p>
         <Button variant="ghost" onClick={onExit}>
@@ -407,8 +407,8 @@ function ExerciseCard({
       <ExerciseFigure exerciseId={cur.exerciseId} className="mx-auto w-full max-w-sm" />
 
       <header>
-        <h1 className="font-display text-5xl font-black uppercase leading-none tracking-wide">{e.name}</h1>
-        <p className="mt-2 font-stencil text-3xl font-black tracking-wide">{target}</p>
+        <h1 className="font-display text-5xl font-black leading-none">{e.name}</h1>
+        <p className="mt-2 font-stencil text-3xl font-black">{target}</p>
         <p className="mt-1 text-sm text-muted">
           {e.restSec > 0 ? `Rest about ${e.restSec} seconds between sets. ` : ""}
           {cur.note ? `${cur.note}.` : ""}
@@ -434,7 +434,7 @@ function ExerciseCard({
           optional
           hint={
             suggested != null
-              ? `Suggested ${fmtWeight(suggested)} ${unit}, based on how last time went.`
+              ? `Suggested ${fmtWeight(suggested)} ${unit}, based on how last time went${w.feeling === "tired" ? " and a little lighter because you're tired" : ""}.`
               : "Not sure where to start? “How to do it” explains how to pick a first weight. For dumbbells, enter one dumbbell."
           }
           error={error}
@@ -474,8 +474,8 @@ function ExerciseCard({
                 type="button"
                 aria-pressed={done}
                 onClick={() => onSet(i)}
-                className={`flex h-16 min-w-16 flex-1 items-center justify-center border-2 font-display text-3xl font-black uppercase transition-colors ${
-                  done ? "border-ink bg-ink text-accent-ink" : "border-field bg-surface text-ink hover:border-ink"
+                className={`flex h-16 min-w-16 flex-1 items-center justify-center border-2 transition-colors ${cur.sets === 1 ? "text-xl font-semibold" : "font-stencil text-3xl font-black"} ${
+                  done ? "border-ink bg-ink text-on-ink" : "border-field bg-surface text-ink hover:border-ink"
                 }`}
               >
                 <span aria-hidden>{cur.sets === 1 ? (done ? "Done ✓" : "Mark done") : done ? "✓" : i + 1}</span>
@@ -592,8 +592,8 @@ function FinishScreen({
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <p className="font-display text-xl font-bold uppercase tracking-widest text-muted">{workoutTitle(w.planned.key)}</p>
-        <h1 className="mt-1 font-display text-5xl font-black uppercase leading-none tracking-wide">{doneCount > 0 ? "Nice work" : "Finish workout"}</h1>
+        <p className="text-lg text-muted">{workoutTitle(w.planned.key)}</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-none">{doneCount > 0 ? "Nice work" : "Finish workout"}</h1>
         <p className="mt-2 text-lg text-muted">
           About {minutes} {minutes === 1 ? "minute" : "minutes"} · {summary}. Check it over, then save.
         </p>

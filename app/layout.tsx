@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow, Big_Shoulders } from "next/font/google";
 import { RouteFocus } from "@/components/RouteFocus";
 import { SiteHeader } from "@/components/SiteHeader";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const display = Big_Shoulders({ variable: "--font-big-shoulders", subsets: ["latin"] });
@@ -18,11 +19,20 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Ironlog", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { themeColor: "#0d0d0d" };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2f1ed" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f0f" },
+  ],
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
+    // suppressHydrationWarning: THEME_SCRIPT may add data-theme to <html> before React hydrates
+    <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh font-body">
         <a href="#main" className="skip-link">
           Skip to content

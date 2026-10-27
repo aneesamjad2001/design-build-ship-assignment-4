@@ -21,8 +21,11 @@ import { getExercise, measureLabel } from "@/lib/library";
 import { getLook } from "@/lib/looks";
 import type { LookId } from "@/lib/looks";
 import { chooseLook, setTime, useIronlog, useToday } from "@/lib/store";
-import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, workoutTitle } from "@/lib/workouts";
-import type { Feeling, TimeOption } from "@/lib/workouts";
+import { TIME_OPTIONS, WORKOUT_KEYS, buildWorkout, describeFeeling, workoutTitle } from "@/lib/workouts";
+import type { Feeling, PlannedExercise, TimeOption, WorkoutKey } from "@/lib/workouts";
+
+/** "3 × 8–12" (no set count for a single set, e.g. a 5-minute walk). */
+const amount = (p: PlannedExercise) => `${p.sets > 1 ? `${p.sets} × ` : ""}${p.min === p.max ? p.min : `${p.min}–${p.max}`}`;
 
 export function TodayView() {
   const snap = useIronlog();
@@ -72,8 +75,8 @@ function Onboarding() {
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <p className="font-display text-xl font-bold uppercase tracking-widest text-muted">Welcome to Ironlog</p>
-        <h1 className="mt-1 font-display text-5xl font-black uppercase leading-none tracking-wide sm:text-6xl">Never walk into the gym without a plan</h1>
+        <p className="text-lg text-muted">Welcome to Ironlog</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">Never walk into the gym without a plan</h1>
         <p className="mt-3 max-w-prose text-lg text-muted">
           Tell us the body you want. Ironlog builds your workouts and, every time you show up, tells you exactly what to do next — however long it&apos;s
           been. No sign-up; it saves on this device.
@@ -86,7 +89,7 @@ function Onboarding() {
             <span className="font-stencil text-3xl font-black text-muted" aria-hidden>
               {i + 1}
             </span>
-            <p className="font-display text-xl font-extrabold uppercase tracking-wide">{title}</p>
+            <p className="font-display text-xl font-extrabold">{title}</p>
             <p className="mt-1 text-sm text-muted">{text}</p>
           </li>
         ))}
@@ -137,12 +140,21 @@ function Today({
   const look = getLook(profile.lookId)!;
   const next = nextWorkout(workouts, today);
   const [feeling, setFeeling] = useState<Feeling>("normal");
+  // a different workout picked from "Your plan" for today only; null = the one the rotation suggests
+  const [picked, setPicked] = useState<WorkoutKey | null>(null);
+  const key = picked ?? next.key;
+  const isPick = key !== next.key;
   // an unfinished workout saved as you go. Today only renders after the browser has been read, so this never runs on the server.
   const [draft] = useState(() => readInProgress());
 
   const ctx = { intro: next.isFirst, daysAway: next.daysAway, feeling, makeUps: next.makeUps };
-  const planned = buildWorkout(look, next.key, profile.time, ctx);
-  const minutes = Object.fromEntries(TIME_OPTIONS.map((t) => [t, buildWorkout(look, next.key, t, ctx).minutes])) as Record<TimeOption, number>;
+  const planned = buildWorkout(look, key, profile.time, ctx);
+  // the same workout at "normal", so the picker can say (and the list can show) what changed
+  const baseline = buildWorkout(look, key, profile.time, { ...ctx, feeling: "normal" });
+  const baselineById = new Map(baseline.exercises.map((p) => [p.exerciseId, p]));
+  const lighterWeights = feeling === "tired" && planned.exercises.some((p) => suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit) != null);
+  const feelingLine = describeFeeling(feeling, baseline, planned, { lighterWeights });
+  const minutes = Object.fromEntries(TIME_OPTIONS.map((t) => [t, buildWorkout(look, key, t, ctx).minutes])) as Record<TimeOption, number>;
   const dateLine = parseDate(today).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const last = lastWorkout(workouts);
   const lastCount = recentCount(workouts, today, 28);
@@ -157,7 +169,7 @@ function Today({
       index: 0,
       progress: Object.fromEntries(
         planned.exercises.map((p) => {
-          const s = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit);
+          const s = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit, feeling);
           return [p.exerciseId, { setsDone: 0, weight: s != null ? fmtWeight(s) : "" }];
         }),
       ),
@@ -188,8 +200,8 @@ function Today({
       )}
 
       <header>
-        <p className="font-display text-xl font-bold uppercase tracking-widest text-muted">{next.isFirst ? "Your plan is ready" : dateLine}</p>
-        <h1 className="mt-1 font-display text-5xl font-black uppercase leading-none tracking-wide sm:text-6xl">
+        <p className="text-lg text-muted">{next.isFirst ? "Your plan is ready" : dateLine}</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">
           {next.isFirst ? "Your first workout" : "Welcome back"}
         </h1>
         <p className="mt-2 text-lg text-muted">
@@ -215,14 +227,26 @@ function Today({
       )}
 
       <section aria-labelledby="next-heading" className="border-2 border-ink bg-surface p-5">
-        <p className="font-display text-lg font-bold uppercase tracking-widest text-muted">{next.repeat ? "Finish this one" : "Next up"}</p>
-        <h2 id="next-heading" className="font-display text-5xl font-black uppercase leading-none tracking-wide">
-          {workoutTitle(next.key)}
+        <p className="text-lg text-muted">{isPick ? "Your pick for today" : next.repeat ? "Finish this one" : "Next up"}</p>
+        <h2 id="next-heading" className="font-display text-5xl font-black leading-none">
+          {workoutTitle(key)}
         </h2>
-        <p className="mt-2 text-muted">
-          <span className="font-semibold text-ink">Why: </span>
-          {next.reason}
-        </p>
+        {isPick ? (
+          <div className="mt-2 flex flex-col items-start gap-1">
+            <p className="text-muted">
+              You picked this one from your plan. Next in the rotation is {workoutTitle(next.key)}; once you finish this one, the plan carries on from{" "}
+              {workoutTitle(key)}.
+            </p>
+            <Button variant="ghost" onClick={() => setPicked(null)} className="!px-0">
+              Back to {workoutTitle(next.key)} (next up)
+            </Button>
+          </div>
+        ) : (
+          <p className="mt-2 text-muted">
+            <span className="font-semibold text-ink">Why: </span>
+            {next.reason}
+          </p>
+        )}
 
         <div className="mt-5 flex flex-col gap-4">
           {next.isFirst ? (
@@ -250,7 +274,11 @@ function Today({
               { value: "normal", label: "Normal" },
               { value: "tired", label: "Tired" },
             ]}
-            hint={feeling === "tired" ? "Got it — a shorter, lighter version." : "Tired? Say so and we'll make it lighter."}
+            hint={
+              <span aria-live="polite" className={feeling === "normal" ? "" : "font-semibold text-ink"}>
+                {feelingLine}
+              </span>
+            }
           />
         </div>
 
@@ -274,17 +302,25 @@ function Today({
         <ol className="mt-5 divide-y divide-line border-y border-line">
           {planned.exercises.map((p) => {
             const e = getExercise(p.exerciseId)!;
-            const w = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit);
+            const w = suggestedWeight(p.exerciseId, weights, next.daysAway, profile.unit, feeling);
             const sub = p.note ?? (w != null ? `Start with ${fmtWeight(w)} ${profile.unit}` : e.weighted ? "We'll help you find a starting weight" : "Just your bodyweight");
+            const was = baselineById.get(p.exerciseId);
+            const changed = was != null && (was.sets !== p.sets || was.min !== p.min || was.max !== p.max);
             return (
               <li key={p.exerciseId} className="flex items-baseline justify-between gap-4 py-3">
                 <div className="min-w-0">
                   <p className="text-lg font-semibold">{e.name}</p>
-                  <p className="text-sm text-muted">{sub}</p>
+                  <p className="text-sm text-muted">
+                    {sub}
+                    {changed && was && ` · normally ${amount(was)}`}
+                  </p>
                 </div>
-                <p className="flex-none font-stencil text-2xl font-black tracking-wide">
-                  {p.sets > 1 ? `${p.sets} × ` : ""}
-                  {p.min === p.max ? p.min : `${p.min}–${p.max}`} <span className="text-base font-bold text-muted">{measureLabel(e.measure)}</span>
+                <p
+                  // remounts when the feeling changes, so the highlight replays on what changed
+                  key={changed ? feeling : "same"}
+                  className={`flex-none font-stencil text-2xl font-black ${changed ? "changed px-1.5" : ""}`}
+                >
+                  {amount(p)} <span className="font-body text-base font-semibold text-muted">{measureLabel(e.measure)}</span>
                 </p>
               </li>
             );
@@ -293,27 +329,36 @@ function Today({
       </section>
 
       <section aria-labelledby="plan-heading" className="border border-line bg-surface p-5">
-        <h2 id="plan-heading" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="plan-heading" className="font-display text-3xl font-extrabold">
           Your plan
         </h2>
         <p className="mt-1 text-muted">
-          Built for <span className="font-semibold text-ink">{look.name}</span>. Three full-body workouts that repeat — do the next one whenever you go.
+          Built for <span className="font-semibold text-ink">{look.name}</span>. Three full-body workouts that repeat — do the next one whenever you go, or
+          pick another for today.
         </p>
-        <ol className="mt-4 grid grid-cols-3 gap-2">
-          {WORKOUT_KEYS.map((k) => (
-            <li
-              key={k}
-              aria-current={k === next.key ? "step" : undefined}
-              className={`border-2 px-2 py-3 text-center ${k === next.key ? "border-ink bg-ink text-accent-ink" : "border-line"}`}
-            >
-              <span className="block font-display text-4xl font-black uppercase leading-none">
-                <span className="sr-only">Workout </span>
-                {k}
+        <div className="mt-4">
+          <Segmented<WorkoutKey>
+            legend="Which workout today?"
+            name="workout"
+            value={key}
+            onChange={(k) => setPicked(k === next.key ? null : k)}
+            options={WORKOUT_KEYS.map((k) => ({
+              value: k,
+              label: (
+                <>
+                  <span className="sr-only">Workout </span>
+                  {k}
+                </>
+              ),
+              sub: k === next.key ? "Next up" : last?.key === k ? "Last done" : "In the rotation",
+            }))}
+            hint={
+              <span aria-live="polite">
+                {isPick ? `Showing ${workoutTitle(key)} above: its exercises, time and Start button. Pick ${next.key} to go back to the next one in your plan.` : `Showing ${workoutTitle(key)} above, the next one in your plan.`}
               </span>
-              <span className={`block text-sm ${k === next.key ? "text-[#333333]" : "text-muted"}`}>{k === next.key ? "Next" : last?.key === k ? "Last done" : " "}</span>
-            </li>
-          ))}
-        </ol>
+            }
+          />
+        </div>
         {workouts.length > 0 && (
           <p className="mt-4 text-sm text-muted">
             {lastCount} {lastCount === 1 ? "workout" : "workouts"} in the last four weeks. Even one a week keeps what you&apos;ve built.

@@ -26,9 +26,9 @@ export function Calendar({ trained, today }: { trained: Set<string>; today: stri
         <Button variant="secondary" onClick={() => shift(-1)} aria-label="Previous month" className="!min-h-11 !px-4">
           ←
         </Button>
-        <h3 className="text-center font-display text-3xl font-extrabold uppercase tracking-wide" aria-live="polite">
+        <h3 className="text-center font-display text-3xl font-extrabold" aria-live="polite">
           {monthName(view.month)} {view.year}
-          <span className="block font-body text-base font-normal normal-case tracking-normal text-muted">
+          <span className="block font-body text-base font-normal text-muted">
             {trainedThisMonth} {trainedThisMonth === 1 ? "day" : "days"} trained
           </span>
         </h3>
@@ -43,7 +43,7 @@ export function Calendar({ trained, today }: { trained: Set<string>; today: stri
         <thead>
           <tr>
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <th key={d} scope="col" className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">
+              <th key={d} scope="col" className="pb-2 text-sm font-semibold text-muted">
                 {d}
               </th>
             ))}
@@ -63,7 +63,7 @@ export function Calendar({ trained, today }: { trained: Set<string>; today: stri
                         !c.inMonth
                           ? "text-line"
                           : did
-                            ? "bg-ink text-accent-ink"
+                            ? "bg-ink text-on-ink"
                             : isToday
                               ? "border-2 border-ink text-ink"
                               : "text-muted"

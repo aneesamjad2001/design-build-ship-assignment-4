@@ -63,7 +63,7 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
         </Banner>
       )}
       <header>
-        <h1 className="font-display text-5xl font-black uppercase leading-none tracking-wide">Progress</h1>
+        <h1 className="font-display text-5xl font-black leading-none">Progress</h1>
         <p className="mt-2 text-muted">Training for the {look.name.toLowerCase()} look. No streaks to protect; every visit counts.</p>
       </header>
 
@@ -82,14 +82,14 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
 
       {workouts.length === 0 ? (
         <section aria-labelledby="plan" className="border-2 border-ink bg-surface p-5">
-          <h2 id="plan" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+          <h2 id="plan" className="font-display text-3xl font-extrabold">
             Your plan, ready to go
           </h2>
           <p className="mt-1 text-muted">Nothing saved yet. These are your three workouts; this page fills in as you train.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {planOverview(look).map((p) => (
               <div key={p.key} className="border border-line bg-raised p-3">
-                <p className="font-display text-xl font-extrabold uppercase tracking-wide">{workoutTitle(p.key)}</p>
+                <p className="font-display text-xl font-extrabold">{workoutTitle(p.key)}</p>
                 <ul className="mt-1 text-sm text-muted">
                   {p.exercises.map((e) => (
                     <li key={e.exerciseId}>{getExercise(e.exerciseId)?.name}</li>
@@ -115,7 +115,7 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
 
           {lifts.length > 0 && (
             <section aria-labelledby="lifts">
-              <h2 id="lifts" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+              <h2 id="lifts" className="font-display text-3xl font-extrabold">
                 Your weights
               </h2>
               <p className="mt-1 text-sm text-muted">&ldquo;Next time&rdquo; is what we&apos;ll suggest, based on how each one felt.</p>
@@ -151,7 +151,7 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
       )}
 
       <section aria-labelledby="body" className="border border-line bg-surface p-5">
-        <h2 id="body" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="body" className="font-display text-3xl font-extrabold">
           Body check-ins
         </h2>
         {bodyTrends.length === 0 ? (
@@ -184,7 +184,7 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
 
       {history.length > 0 && (
         <section aria-labelledby="history">
-          <h2 id="history" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+          <h2 id="history" className="font-display text-3xl font-extrabold">
             Workouts
           </h2>
           <ul className="mt-3 flex flex-col gap-2">
@@ -195,7 +195,7 @@ function Progress({ profile, workouts, weights, checkins, today }: { profile: Pr
                   <details>
                     <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-3 px-4 py-2">
                       <span>
-                        <span className="block font-display text-xl font-bold uppercase tracking-wide">{workoutTitle(w.key)}</span>
+                        <span className="block text-lg font-semibold">{workoutTitle(w.key)}</span>
                         <span className="text-sm text-muted">
                           {shortDate(w.date)} · {done} of {w.exercises.length} exercises
                         </span>
