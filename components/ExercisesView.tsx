@@ -98,24 +98,6 @@ function Library({ saved }: { saved: SavedExercise[] }) {
         )}
       </header>
 
-      {undo && (
-        <Banner
-          tone="info"
-          title={`${undo.name} removed from your saved exercises`}
-          action={
-            <Button
-              variant="secondary"
-              className="!min-h-11 !text-base"
-              onClick={() => {
-                restoreSaved(undo);
-                setUndo(null);
-              }}
-            >
-              Undo
-            </Button>
-          }
-        />
-      )}
 
       <form onSubmit={submit} noValidate className="flex flex-col gap-5" aria-labelledby="find-heading">
         <h2 id="find-heading" className="font-display text-3xl font-extrabold">
@@ -135,7 +117,7 @@ function Library({ saved }: { saved: SavedExercise[] }) {
               <option value="">Any muscle</option>
               {MUSCLES.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name}
+                  {"where" in m ? `${m.name} (${m.where})` : m.name}
                 </option>
               ))}
             </Select>
@@ -188,6 +170,24 @@ function Library({ saved }: { saved: SavedExercise[] }) {
         <h2 id="saved-heading" ref={savedHeading} tabIndex={-1} className="font-display text-3xl font-extrabold">
           Your saved exercises
         </h2>
+        {undo && (
+          <Banner
+            tone="info"
+            title={`${undo.name} removed from your saved exercises`}
+            action={
+              <Button
+                variant="secondary"
+                className="!min-h-11 !text-base"
+                onClick={() => {
+                  restoreSaved(undo);
+                  setUndo(null);
+                }}
+              >
+                Undo
+              </Button>
+            }
+          />
+        )}
         {saved.length === 0 ? (
           <p className="text-muted">Nothing saved yet. Save exercises from the results to keep them here with your own notes.</p>
         ) : (

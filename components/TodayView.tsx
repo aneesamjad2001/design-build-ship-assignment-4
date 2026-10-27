@@ -73,6 +73,7 @@ function Onboarding() {
 
   return (
     <div className="flex flex-col gap-8">
+      <FlashBanner />
       <header>
         <p className="text-lg text-muted">Welcome to Ironlog</p>
         <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">Never walk into the gym without a plan</h1>
@@ -351,7 +352,7 @@ function Today({
             }
           />
         </div>
-        {workouts.length > 0 && (
+        {lastCount > 0 && (
           <p className="mt-4 text-sm text-muted">
             {lastCount} {lastCount === 1 ? "workout" : "workouts"} in the last four weeks. Even one a week keeps what you&apos;ve built.
           </p>

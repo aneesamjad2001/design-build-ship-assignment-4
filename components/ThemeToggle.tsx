@@ -76,7 +76,7 @@ export function ThemeToggle() {
       type="button"
       onClick={() => save(next)}
       title={`Switch to ${THEME_LABEL[next].toLowerCase()}${next === "system" ? " (follow this device)" : ""}`}
-      className="flex min-h-11 items-center gap-2 px-2 text-base font-semibold text-muted hover:text-ink"
+      className="flex min-h-11 items-center gap-2 whitespace-nowrap px-2 text-base font-semibold text-muted hover:text-ink"
     >
       <Icon pref={pref} />
       <span>Theme: {THEME_LABEL[pref]}</span>

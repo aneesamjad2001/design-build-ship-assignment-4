@@ -1,5 +1,5 @@
-/** A calendar file (.ics) with a weekly training reminder. Ironlog has no server,
- *  so it can't send notifications itself — but any calendar app can, and this
+/** A calendar file (.ics) with a weekly training reminder. Ironlog doesn't send
+ *  notifications itself, but any calendar app can, and this
  *  gives it the schedule. Times are "floating": they mean local time wherever you are. */
 
 import { addDays, parseDate, toDateString } from "./dates.ts";

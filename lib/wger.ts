@@ -22,20 +22,20 @@ export const PAGE_LIMIT = 100;
 
 export const MUSCLES = [
   { id: 4, name: "Chest" },
-  { id: 12, name: "Lats" },
-  { id: 9, name: "Traps" },
+  { id: 12, name: "Lats", where: "sides of the back" },
+  { id: 9, name: "Traps", where: "upper back and neck" },
   { id: 2, name: "Shoulders" },
   { id: 1, name: "Biceps" },
   { id: 5, name: "Triceps" },
-  { id: 13, name: "Brachialis" },
+  { id: 13, name: "Brachialis", where: "front of the upper arm" },
   { id: 6, name: "Abs" },
-  { id: 14, name: "Obliques" },
-  { id: 3, name: "Serratus" },
+  { id: 14, name: "Obliques", where: "sides of the waist" },
+  { id: 3, name: "Serratus", where: "side of the ribs" },
   { id: 8, name: "Glutes" },
-  { id: 10, name: "Quads" },
-  { id: 11, name: "Hamstrings" },
+  { id: 10, name: "Quads", where: "front of the thigh" },
+  { id: 11, name: "Hamstrings", where: "back of the thigh" },
   { id: 7, name: "Calves" },
-  { id: 15, name: "Soleus" },
+  { id: 15, name: "Soleus", where: "lower calf" },
 ] as const;
 
 export const EQUIPMENT = [
@@ -100,6 +100,7 @@ export function toPlainText(html: string): string {
     .replace(/[ \t]+/g, " ")
     .replace(/ *\n */g, "\n")
     .replace(/\n{3,}/g, "\n\n")
+    .replace(/•\n+/g, "• ")
     .trim();
 }
 

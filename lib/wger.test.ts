@@ -55,6 +55,10 @@ describe("wger: descriptions are plain text", () => {
     const t = toPlainText("&lt;img src=x onerror=alert(1)&gt; &#60;b&#62;");
     assert.ok(!t.includes("<") && !t.includes(">"), t);
   });
+  it("keeps each list item's text on its bullet's line", () => {
+    const t = toPlainText("<ol>\n<li>\n<p>Lie on the bench.</p>\n</li>\n<li><p>Press up.</p></li>\n</ol>");
+    assert.equal(t, "• Lie on the bench.\n\n• Press up.");
+  });
 });
 
 describe("wger: filters", () => {
