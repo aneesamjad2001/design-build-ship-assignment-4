@@ -98,7 +98,7 @@ export function NutritionPanel({ unit, lookId, saved }: { unit: Unit; lookId: Lo
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
       <p className="text-sm text-muted">
-        Skip this if counting calories isn&apos;t for you, or if it&apos;s been stressful in the past. For adults 18 and over. Saved on this device only.
+        Skip this if counting calories isn&apos;t for you, or if it&apos;s been stressful in the past. For adults 18 and over. Saved to your account; only you can see it.
       </p>
       <Field id="nutrition-age" label="Age" error={errors.age}>
         {(p) => <Input {...p} inputMode="numeric" autoComplete="off" value={form.age} invalid={!!errors.age} onChange={(e) => set("age", e.target.value)} className="max-w-40" />}

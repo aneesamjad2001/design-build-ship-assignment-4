@@ -1,6 +1,6 @@
 import { ButtonLink } from "./Button";
 
-/** Shown for the instant between page load and reading the device's storage. */
+/** Shown while your training loads from your account. */
 export function LoadingState() {
   return (
     <div aria-busy="true" role="status" className="py-16 text-center">

@@ -31,12 +31,13 @@ const BLANK: Progress = { setsDone: 0, weight: "" };
 export function WorkoutView() {
   const snap = useIronlog();
   const today = useToday();
-  // the unfinished workout lives in this browser; read it once, after the page has loaded
+  // the unfinished workout lives in this browser under your user id; read it once your account has loaded
   const [saved, setSaved] = useState<InProgress | null | undefined>(undefined);
   useEffect(() => {
+    if (!snap.ready) return;
     const t = setTimeout(() => setSaved(readInProgress()), 0);
     return () => clearTimeout(t);
-  }, []);
+  }, [snap.ready]);
 
   if (!snap.ready || !today || saved === undefined) return <LoadingState />;
   if (!snap.data.profile || saved === null) return <NoWorkout />;

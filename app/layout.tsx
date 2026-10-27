@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Barlow, Big_Shoulders } from "next/font/google";
+import { AccountData } from "@/components/AccountData";
 import { RouteFocus } from "@/components/RouteFocus";
 import { SiteHeader } from "@/components/SiteHeader";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -10,9 +11,9 @@ const display = Big_Shoulders({ variable: "--font-big-shoulders", subsets: ["lat
 const body = Barlow({ variable: "--font-barlow", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: { default: "Ironlog — your gym coach, saved on this device", template: "%s · Ironlog" },
+  title: { default: "Ironlog — your gym coach", template: "%s · Ironlog" },
   description:
-    "Pick the body you want and get an exact workout every time you go, however long it's been. No sign-up: everything stays on your device.",
+    "Pick the body you want and get an exact workout every time you go, however long it's been. Your training is saved to your account.",
   icons: {
     icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }, { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
     apple: "/icons/apple-touch-icon.png",
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader />
           <RouteFocus />
           <main id="main" className="mx-auto w-full max-w-2xl px-4 pb-28 pt-6 md:pb-14">
+          <AccountData />
           {children}
           </main>
         </ClerkProvider>

@@ -30,6 +30,20 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end
+$$;
+
+create trigger profiles_touch before update on public.profiles
+  for each row execute function public.touch_updated_at();
+
 -- workouts: one row per finished workout --------------------------------------
 create table public.workouts (
   id         uuid primary key default gen_random_uuid(),

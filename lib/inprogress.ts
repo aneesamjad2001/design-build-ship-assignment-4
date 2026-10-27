@@ -1,5 +1,9 @@
 /** A workout in progress, saved as you go so a locked phone or a stray tap
- *  never loses your place. Separate from the saved history. */
+ *  never loses your place. Separate from the saved history.
+ *
+ *  It is the one thing kept in the browser, and the browser is shared, not personal:
+ *  the key includes the signed-in Clerk user id, nothing is read or written while no
+ *  one is signed in, and every other person's draft is removed (see keepOnlyInProgress). */
 
 import { getExercise } from "./library.ts";
 import { TIME_OPTIONS, WORKOUT_KEYS } from "./workouts.ts";
@@ -68,26 +72,54 @@ export function parseInProgress(raw: string | null, now: number): InProgress | n
   };
 }
 
+export const inProgressKey = (userId: string) => `${INPROGRESS_KEY}:${userId}`;
+
+/** whose draft the read/write/clear calls below touch; null while signed out */
+let owner: string | null = null;
+
+export function setInProgressOwner(userId: string | null) {
+  owner = userId;
+}
+
 export function readInProgress(now: number = Date.now()): InProgress | null {
+  if (!owner) return null;
   try {
-    return parseInProgress(window.localStorage.getItem(INPROGRESS_KEY), now);
+    return parseInProgress(window.localStorage.getItem(inProgressKey(owner)), now);
   } catch {
     return null;
   }
 }
 
 export function writeInProgress(w: InProgress) {
+  if (!owner) return;
   try {
-    window.localStorage.setItem(INPROGRESS_KEY, JSON.stringify(w));
+    window.localStorage.setItem(inProgressKey(owner), JSON.stringify(w));
   } catch {
     /* a convenience, never a requirement */
   }
 }
 
 export function clearInProgress() {
+  if (!owner) return;
   try {
-    window.localStorage.removeItem(INPROGRESS_KEY);
+    window.localStorage.removeItem(inProgressKey(owner));
   } catch {
     /* ignore */
+  }
+}
+
+/** Remove every in-progress draft in this browser except `userId`'s (all of them when
+ *  signed out), including the old unscoped key from before accounts. */
+export function keepOnlyInProgress(userId: string | null) {
+  try {
+    const keep = userId ? inProgressKey(userId) : null;
+    const doomed: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(INPROGRESS_KEY) && k !== keep) doomed.push(k);
+    }
+    doomed.forEach((k) => window.localStorage.removeItem(k));
+  } catch {
+    /* storage blocked: there is nothing to remove */
   }
 }

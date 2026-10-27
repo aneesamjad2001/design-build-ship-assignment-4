@@ -39,7 +39,6 @@ export function TodayView() {
       weights={snap.data.weights}
       lastCheckin={snap.data.checkins.reduce((m, c) => (c.date > m ? c.date : m), "")}
       today={today}
-      persistent={snap.persistent}
       recovered={snap.recovered}
     />
   );
@@ -79,7 +78,7 @@ function Onboarding() {
         <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">Never walk into the gym without a plan</h1>
         <p className="mt-3 max-w-prose text-lg text-muted">
           Tell us the body you want. Ironlog builds your workouts and, every time you show up, tells you exactly what to do next — however long it&apos;s
-          been. No sign-up; it saves on this device.
+          been. It saves to your account, so it follows you to any device.
         </p>
       </header>
 
@@ -125,7 +124,6 @@ function Today({
   weights,
   lastCheckin,
   today,
-  persistent,
   recovered,
 }: {
   profile: Profile;
@@ -133,7 +131,6 @@ function Today({
   weights: WeightBook;
   lastCheckin: string;
   today: string;
-  persistent: boolean;
   recovered: boolean;
 }) {
   const router = useRouter();
@@ -144,7 +141,7 @@ function Today({
   const [picked, setPicked] = useState<WorkoutKey | null>(null);
   const key = picked ?? next.key;
   const isPick = key !== next.key;
-  // an unfinished workout saved as you go. Today only renders after the browser has been read, so this never runs on the server.
+  // an unfinished workout saved as you go. Today only renders once your account has loaded, so this never runs on the server.
   const [draft] = useState(() => readInProgress());
 
   const ctx = { intro: next.isFirst, daysAway: next.daysAway, feeling, makeUps: next.makeUps };
@@ -182,11 +179,6 @@ function Today({
   return (
     <div className="flex flex-col gap-6">
       <FlashBanner />
-      {!persistent && (
-        <Banner tone="warning" title="Your browser is blocking storage">
-          Your workouts will be lost when you close this tab. Turn off private browsing to keep them.
-        </Banner>
-      )}
       {recovered && (
         <Banner tone="warning" title="Some saved data couldn't be read">
           We kept everything we could. Anything unreadable was skipped.
@@ -375,7 +367,7 @@ function Today({
       </section>
 
       <footer className="flex flex-col gap-2">
-        <p className="text-sm text-muted">Saved on this device. Miss a week? Nothing to catch up on — just do the next workout.</p>
+        <p className="text-sm text-muted">Saved to your account. Miss a week? Nothing to catch up on — just do the next workout.</p>
         <SafetyNote />
       </footer>
     </div>

@@ -9,7 +9,7 @@ import { MAX_BACKUP_BYTES, backupFileName, describeBackup, readBackup } from "@/
 import type { Data } from "@/lib/data";
 import { exportBackup, restoreFromBackup } from "@/lib/store";
 
-/** Months of training live only in this browser, so give people a way to keep a copy. */
+/** A copy of your training to keep, and a way to bring a backup (e.g. from the device-only version) into your account. */
 export function BackupPanel({ sessionCount }: { sessionCount: number }) {
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<string | null>(null);
@@ -75,7 +75,7 @@ export function BackupPanel({ sessionCount }: { sessionCount: number }) {
         title="Restore this backup?"
         body={
           pending
-            ? `${pending.label} This replaces what's on this device now (${sessionCount} ${sessionCount === 1 ? "workout" : "workouts"}).${pending.recovered ? " Some unreadable parts of the file will be skipped." : ""}`
+            ? `${pending.label} This replaces what's in your account now (${sessionCount} ${sessionCount === 1 ? "workout" : "workouts"}).${pending.recovered ? " Some unreadable parts of the file will be skipped." : ""}`
             : ""
         }
         confirmLabel="Restore backup"
