@@ -73,6 +73,8 @@ function Library({ saved }: { saved: SavedExercise[] }) {
     }
     setFilterError(undefined);
     void load(muscle, equipment);
+    // the results sit below your saved list: bring them into view once "Loading…" renders
+    requestAnimationFrame(() => document.getElementById("results-heading")?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }
 
   function remove(wgerId: number, fromSavedList: boolean) {
@@ -151,22 +153,7 @@ function Library({ saved }: { saved: SavedExercise[] }) {
         </Button>
       </form>
 
-      {result.state !== "idle" && (
-        <section aria-labelledby="results-heading" className="flex flex-col gap-4">
-          <h2 id="results-heading" className="font-display text-3xl font-extrabold">
-            Results
-          </h2>
-          <Results result={result} shown={shown} name={name} onClearName={() => setName("")} onRetry={() => void load(last.current.muscle, last.current.equipment)} />
-          {shown.length > 0 && (
-            <ul className="flex flex-col gap-4">
-              {shown.map((ex) => (
-                <ExerciseCard key={ex.id} ex={ex} isSaved={savedIds.has(ex.id)} onSave={() => saveExercise(ex)} onRemove={() => remove(ex.id, false)} />
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
+      {/* above the results, so a long search never buries what you saved */}
       <section id="saved" aria-labelledby="saved-heading" className="flex flex-col gap-3 border-t border-line pt-6">
         <h2 id="saved-heading" ref={savedHeading} tabIndex={-1} className="font-display text-3xl font-extrabold">
           Your saved exercises
@@ -199,6 +186,23 @@ function Library({ saved }: { saved: SavedExercise[] }) {
           </ul>
         )}
       </section>
+
+      {result.state !== "idle" && (
+        <section aria-labelledby="results-heading" className="flex flex-col gap-4">
+          <h2 id="results-heading" className="font-display text-3xl font-extrabold">
+            Results
+          </h2>
+          <Results result={result} shown={shown} name={name} onClearName={() => setName("")} onRetry={() => void load(last.current.muscle, last.current.equipment)} />
+          {shown.length > 0 && (
+            <ul className="flex flex-col gap-4">
+              {shown.map((ex) => (
+                <ExerciseCard key={ex.id} ex={ex} isSaved={savedIds.has(ex.id)} onSave={() => saveExercise(ex)} onRemove={() => remove(ex.id, false)} />
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
     </div>
   );
 }

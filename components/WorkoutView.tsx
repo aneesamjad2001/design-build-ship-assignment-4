@@ -172,6 +172,16 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
     go(w.index + 1);
   }
 
+  /** Out of time or energy: straight to the finish screen, where what's done can be saved. */
+  function finishNow() {
+    if (!cur) return;
+    if (!checkWeight()) {
+      document.getElementById(`weight-${cur.exerciseId}`)?.focus();
+      return;
+    }
+    go(w.planned.exercises.length);
+  }
+
   function skip() {
     if (!cur) return;
     update(cur.exerciseId, { skipped: true, setsDone: 0 });
@@ -233,6 +243,7 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
           onUnskip={() => update(cur.exerciseId, { skipped: false })}
           onPrev={() => go(w.index - 1)}
           onNext={next}
+          onFinishNow={finishNow}
           onExit={() => setExitOpen(true)}
         />
       ) : (
@@ -319,6 +330,7 @@ function ExerciseCard({
   onUnskip,
   onPrev,
   onNext,
+  onFinishNow,
   onExit,
 }: {
   w: InProgress;
@@ -337,6 +349,7 @@ function ExerciseCard({
   onUnskip: () => void;
   onPrev: () => void;
   onNext: () => void;
+  onFinishNow: () => void;
   onExit: () => void;
 }) {
   const e = getExercise(cur.exerciseId)!;
@@ -527,6 +540,11 @@ function ExerciseCard({
         {canSwap && (
           <Button variant="ghost" onClick={onSwap}>
             Busy or not at your gym? Swap it
+          </Button>
+        )}
+        {!isLast && (
+          <Button variant="ghost" onClick={onFinishNow}>
+            Out of time? Finish now
           </Button>
         )}
       </div>
