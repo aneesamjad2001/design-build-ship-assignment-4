@@ -75,8 +75,8 @@ function Onboarding() {
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <p className="font-display text-xl font-bold uppercase tracking-widest text-muted">Welcome to Ironlog</p>
-        <h1 className="mt-1 font-display text-5xl font-black uppercase leading-none tracking-wide sm:text-6xl">Never walk into the gym without a plan</h1>
+        <p className="text-lg text-muted">Welcome to Ironlog</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">Never walk into the gym without a plan</h1>
         <p className="mt-3 max-w-prose text-lg text-muted">
           Tell us the body you want. Ironlog builds your workouts and, every time you show up, tells you exactly what to do next — however long it&apos;s
           been. No sign-up; it saves on this device.
@@ -89,7 +89,7 @@ function Onboarding() {
             <span className="font-stencil text-3xl font-black text-muted" aria-hidden>
               {i + 1}
             </span>
-            <p className="font-display text-xl font-extrabold uppercase tracking-wide">{title}</p>
+            <p className="font-display text-xl font-extrabold">{title}</p>
             <p className="mt-1 text-sm text-muted">{text}</p>
           </li>
         ))}
@@ -200,8 +200,8 @@ function Today({
       )}
 
       <header>
-        <p className="font-display text-xl font-bold uppercase tracking-widest text-muted">{next.isFirst ? "Your plan is ready" : dateLine}</p>
-        <h1 className="mt-1 font-display text-5xl font-black uppercase leading-none tracking-wide sm:text-6xl">
+        <p className="text-lg text-muted">{next.isFirst ? "Your plan is ready" : dateLine}</p>
+        <h1 className="mt-1 font-display text-5xl font-black leading-none sm:text-6xl">
           {next.isFirst ? "Your first workout" : "Welcome back"}
         </h1>
         <p className="mt-2 text-lg text-muted">
@@ -227,8 +227,8 @@ function Today({
       )}
 
       <section aria-labelledby="next-heading" className="border-2 border-ink bg-surface p-5">
-        <p className="font-display text-lg font-bold uppercase tracking-widest text-muted">{isPick ? "Your pick for today" : next.repeat ? "Finish this one" : "Next up"}</p>
-        <h2 id="next-heading" className="font-display text-5xl font-black uppercase leading-none tracking-wide">
+        <p className="text-lg text-muted">{isPick ? "Your pick for today" : next.repeat ? "Finish this one" : "Next up"}</p>
+        <h2 id="next-heading" className="font-display text-5xl font-black leading-none">
           {workoutTitle(key)}
         </h2>
         {isPick ? (
@@ -318,7 +318,7 @@ function Today({
                 <p
                   // remounts when the feeling changes, so the highlight replays on what changed
                   key={changed ? feeling : "same"}
-                  className={`flex-none font-stencil text-2xl font-black tracking-wide ${changed ? "changed px-1.5" : ""}`}
+                  className={`flex-none font-stencil text-2xl font-black ${changed ? "changed px-1.5" : ""}`}
                 >
                   {amount(p)} <span className="font-body text-base font-semibold text-muted">{measureLabel(e.measure)}</span>
                 </p>
@@ -329,7 +329,7 @@ function Today({
       </section>
 
       <section aria-labelledby="plan-heading" className="border border-line bg-surface p-5">
-        <h2 id="plan-heading" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="plan-heading" className="font-display text-3xl font-extrabold">
           Your plan
         </h2>
         <p className="mt-1 text-muted">

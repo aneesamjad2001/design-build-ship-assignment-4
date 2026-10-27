@@ -49,7 +49,7 @@ export function FieldError({ id, children }: { id?: string; children: ReactNode 
     <p id={id} className="flex items-start gap-2 text-base font-medium text-danger">
       <span
         aria-hidden
-        className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-danger text-sm font-black text-accent-ink"
+        className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-danger text-sm font-black text-on-danger"
       >
         !
       </span>

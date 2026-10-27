@@ -23,7 +23,7 @@ export function Banner({
       <span
         aria-hidden
         className={`mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full text-sm font-black ${
-          tone === "warning" ? "bg-danger text-accent-ink" : "bg-ink text-accent-ink"
+          tone === "warning" ? "bg-danger text-on-danger" : "bg-ink text-on-ink"
         }`}
       >
         {symbol}

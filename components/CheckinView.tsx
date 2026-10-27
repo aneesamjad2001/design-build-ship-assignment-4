@@ -59,7 +59,7 @@ function CheckinPage({ unit, checkins, today }: { unit: Unit; checkins: Checkin[
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="font-display text-5xl font-black uppercase leading-none tracking-wide">Body check-in</h1>
+        <h1 className="font-display text-5xl font-black leading-none">Body check-in</h1>
         <p className="mt-2 max-w-prose text-muted">
           Optional, and once a month is plenty. Fill in any of these. You only ever see your own trend: no targets, no &ldquo;ideal&rdquo; numbers.
         </p>
@@ -128,7 +128,7 @@ function CheckinPage({ unit, checkins, today }: { unit: Unit; checkins: Checkin[
 
       {history.length > 0 && (
         <section aria-labelledby="past">
-          <h2 id="past" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+          <h2 id="past" className="font-display text-3xl font-extrabold">
             Past check-ins
           </h2>
           <ul className="mt-3 divide-y divide-line border-y border-line">

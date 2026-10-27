@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { addDays, daysBetween, monthGrid, startOfWeek } from "./dates.ts";
 import { buildCalendar, fold, isTime, nextWeekday, suggestedDays } from "./ics.ts";
+import { THEME_KEY, THEME_SCRIPT, nextThemePref, parseThemePref } from "./theme.ts";
 
 const MON = "2026-10-19"; // a Monday
 
@@ -47,5 +48,21 @@ describe("calendar reminders", () => {
     assert.deepEqual(suggestedDays(3), [0, 2, 4]);
     assert.equal(isTime("18:00"), true);
     assert.equal(isTime("25:00"), false);
+  });
+});
+
+describe("theme preference", () => {
+  it("reads only light or dark; anything else means follow the system", () => {
+    assert.equal(parseThemePref("light"), "light");
+    assert.equal(parseThemePref("dark"), "dark");
+    assert.equal(parseThemePref(null), "system");
+    assert.equal(parseThemePref("purple"), "system");
+  });
+  it("the header button cycles system, light, dark", () => {
+    assert.deepEqual([nextThemePref("system"), nextThemePref("light"), nextThemePref("dark")], ["light", "dark", "system"]);
+  });
+  it("the before-paint script reads the same storage key and is wrapped in try/catch", () => {
+    assert.ok(THEME_SCRIPT.includes(JSON.stringify(THEME_KEY)));
+    assert.match(THEME_SCRIPT, /try\{.*\}catch\(e\)\{\}/);
   });
 });

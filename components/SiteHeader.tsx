@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "/", label: "Today" },
@@ -30,35 +31,38 @@ export function SiteHeader() {
   return (
     <header className="border-b border-line bg-bg md:sticky md:top-0 md:z-20">
       <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-display text-2xl font-black uppercase tracking-widest">
+        <Link href="/" className="flex items-center gap-2 font-display text-2xl font-black">
           <Barbell />
           Ironlog
         </Link>
-        {!inWorkout && (
-        <nav
-          aria-label="Main"
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:static md:border-0 md:bg-transparent"
-        >
-          <ul className="mx-auto flex max-w-2xl md:gap-1">
-            {LINKS.map((l) => {
-              const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-              return (
-                <li key={l.href} className="flex-1 md:flex-none">
-                  <Link
-                    href={l.href}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex h-14 items-center justify-center border-t-4 px-4 font-display text-lg font-bold uppercase tracking-wider md:border-b-4 md:border-t-0 ${
-                      active ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"
-                    }`}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-        )}
+        <div className="flex items-center gap-2">
+          {!inWorkout && (
+          <nav
+            aria-label="Main"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface md:static md:border-0 md:bg-transparent"
+          >
+            <ul className="mx-auto flex max-w-2xl md:gap-1">
+              {LINKS.map((l) => {
+                const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+                return (
+                  <li key={l.href} className="flex-1 md:flex-none">
+                    <Link
+                      href={l.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex h-14 items-center justify-center border-t-4 px-4 text-lg font-semibold md:border-b-4 md:border-t-0 ${
+                        active ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"
+                      }`}
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+          )}
+          <ThemeToggle />
+        </div>
       </div>
       <div className="hazard h-1.5" aria-hidden />
     </header>

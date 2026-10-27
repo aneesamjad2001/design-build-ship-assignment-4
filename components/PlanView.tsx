@@ -52,7 +52,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="font-display text-5xl font-black uppercase leading-none tracking-wide">Your plan</h1>
+        <h1 className="font-display text-5xl font-black leading-none">Your plan</h1>
         <p className="mt-2 text-muted">Change your look any time. Your history and remembered weights stay.</p>
       </header>
 
@@ -67,7 +67,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
         />
 
         <section aria-labelledby="workouts" className="border border-line bg-surface p-5">
-          <h2 id="workouts" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+          <h2 id="workouts" className="font-display text-3xl font-extrabold">
             Your three workouts
           </h2>
           <p className="mt-1 text-muted">
@@ -122,7 +122,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </form>
 
       <section aria-labelledby="honest" className="border-l-4 border-ink bg-surface p-5">
-        <h2 id="honest" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="honest" className="font-display text-3xl font-extrabold">
           What can training do?
         </h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-muted">
@@ -135,7 +135,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       <FoodSleepCard />
 
       <section aria-labelledby="nutrition" className="border border-line bg-surface p-5">
-        <h2 id="nutrition" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="nutrition" className="font-display text-3xl font-extrabold">
           Calorie and protein estimate
         </h2>
         <p className="mb-4 mt-1 text-muted">Optional. A rough daily starting point for your look, as a range. Nothing to log.</p>
@@ -143,7 +143,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </section>
 
       <section aria-labelledby="body" className="border border-line bg-surface p-5">
-        <h2 id="body" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="body" className="font-display text-3xl font-extrabold">
           Monthly body check-in
         </h2>
         <p className="mb-4 mt-1 text-muted">Optional. Note your weight or a few measurements once a month and see the trend on Progress.</p>
@@ -153,7 +153,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </section>
 
       <section aria-labelledby="reminders" className="border-t border-line pt-6">
-        <h2 id="reminders" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="reminders" className="font-display text-3xl font-extrabold">
           Training reminders
         </h2>
         <p className="mb-4 mt-2 max-w-prose text-muted">Want a nudge? Put a few gym slots on your calendar. Miss one and nothing breaks.</p>
@@ -161,7 +161,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
       </section>
 
       <section aria-labelledby="data" className="border-t border-line pt-6">
-        <h2 id="data" className="font-display text-3xl font-extrabold uppercase tracking-wide">
+        <h2 id="data" className="font-display text-3xl font-extrabold">
           Your data
         </h2>
         <p className="mb-4 mt-2 max-w-prose text-muted">
