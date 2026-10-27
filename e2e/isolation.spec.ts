@@ -116,8 +116,8 @@ test("A picks a look and saves an exercise with a note", async () => {
   await expect.poll(async () => rows(await rest(await a.token(), "profiles?select=user_id")).length).toBe(1);
 
   await page.goto("/exercises");
-  await page.getByLabel("Muscle").selectOption({ label: "Chest" });
-  await page.getByLabel("Equipment").selectOption({ label: "Dumbbell" });
+  await page.getByLabel("Muscle", { exact: true }).selectOption({ label: "Chest" });
+  await page.getByLabel("Equipment", { exact: true }).selectOption({ label: "Dumbbell" });
   await page.getByRole("button", { name: "Show exercises" }).click();
   await expect(page.getByRole("status").filter({ hasText: /exercises? for/ })).toBeVisible({ timeout: 30_000 });
 
