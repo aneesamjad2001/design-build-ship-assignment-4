@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Banner } from "./Banner";
 import { Button, ButtonLink } from "./Button";
 import { BackupPanel } from "./BackupPanel";
 import { Disclosure } from "./Disclosure";
@@ -18,7 +17,6 @@ import type { Unit } from "@/lib/adapt";
 import type { Data, Profile } from "@/lib/data";
 import { getExercise } from "@/lib/library";
 import { CAN_AND_CANT, getLook } from "@/lib/looks";
-import type { LookId } from "@/lib/looks";
 import { chooseLook, resetAll, setFlash, setUnit, useIronlog } from "@/lib/store";
 import { planOverview, workoutTitle } from "@/lib/workouts";
 
@@ -31,51 +29,41 @@ export function PlanView() {
 
 function Plan({ profile, data }: { profile: Profile; data: Data }) {
   const router = useRouter();
-  const [look, setLook] = useState<LookId>(profile.lookId);
-  const [unit, setUnitState] = useState<Unit>(profile.unit);
-  const [saved, setSaved] = useState<string | null>(null);
+  // each choice saves the moment it's made: a separate Save button far down the page
+  // let people leave thinking they'd changed their look when they hadn't
+  const [lookSaved, setLookSaved] = useState<string | null>(null);
+  const [unitSaved, setUnitSaved] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
-  const preview = getLook(look)!;
+  const preview = getLook(profile.lookId)!;
   const count = data.workouts.length;
-
-  function save(e: React.FormEvent) {
-    e.preventDefault();
-    const unitChanged = unit !== profile.unit;
-    if (look !== profile.lookId) chooseLook(look);
-    if (unitChanged) setUnit(unit);
-    setSaved(
-      unitChanged && count > 0
-        ? `Saved. Weights now show in ${unit}. Earlier entries are converted and rounded for display; what you typed is kept, so switching back shows it again.`
-        : "Saved. Your next workout follows this plan, and your history and weights stay.",
-    );
-  }
 
   return (
     <div className="flex flex-col gap-8">
       <header>
         <h1 className="font-display text-5xl font-black leading-none">Your plan</h1>
-        <p className="mt-2 text-muted">Change your look any time. Your history and remembered weights stay.</p>
+        <p className="mt-2 text-muted">Change your look or units any time; each choice saves straight away. Your history and remembered weights stay.</p>
       </header>
 
-      <form onSubmit={save} noValidate className="flex flex-col gap-8">
-        <LookPicker
-          legend="Your look"
-          value={look}
-          onChange={(id) => {
-            setLook(id);
-            setSaved(null);
-          }}
-        />
-
-        <section aria-labelledby="workouts" className="border border-line bg-surface p-5">
-          <h2 id="workouts" className="font-display text-3xl font-extrabold">
-            Your three workouts
-          </h2>
-          <p className="mt-1 text-muted">
-            For {preview.name}: {preview.description} Every workout trains your whole body, so a missed week leaves no gap.
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <LookPicker
+            legend="Your look"
+            value={profile.lookId}
+            onChange={(id) => {
+              if (id === profile.lookId) return;
+              chooseLook(id);
+              setLookSaved(`Saved. Your next workout is built for ${getLook(id)!.name}; your history and weights stay.`);
+            }}
+          />
+          <p aria-live="polite" className="font-semibold">
+            {lookSaved && `✓ ${lookSaved}`}
           </p>
-          <p className="mt-2 text-muted">
-            They rotate A → B → C, and Today always shows the next one. Want a different one today? Pick it under &ldquo;Your plan&rdquo; on{" "}
+        </div>
+
+        <Disclosure id="workouts" title="Your three workouts" summary="They rotate A → B → C, and Today always shows the next one.">
+          <p className="text-muted">
+            For {preview.name}: {preview.description} Every workout trains your whole body, so a missed week leaves no gap. Want a different one
+            today? Pick it under &ldquo;Your plan&rdquo; on{" "}
             <Link href="/" className="font-semibold text-ink underline underline-offset-4">
               Today
             </Link>
@@ -98,29 +86,32 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
               </div>
             ))}
           </dl>
-        </section>
-
-        <Segmented<Unit>
-          legend="Weights in"
-          name="unit"
-          value={unit}
-          onChange={(u) => {
-            setUnitState(u);
-            setSaved(null);
-          }}
-          options={[
-            { value: "lb", label: "Pounds", sub: "lb · inches" },
-            { value: "kg", label: "Kilograms", sub: "kg · cm" },
-          ]}
-        />
+        </Disclosure>
 
         <div className="flex flex-col gap-3">
-          {saved && <Banner tone="success" title={saved} />}
-          <Button type="submit" variant="primary" className="w-full sm:w-auto sm:self-start">
-            Save changes
-          </Button>
+          <Segmented<Unit>
+            legend="Weights in"
+            name="unit"
+            value={profile.unit}
+            onChange={(u) => {
+              if (u === profile.unit) return;
+              setUnit(u);
+              setUnitSaved(
+                count > 0
+                  ? `Saved. Weights now show in ${u}. Earlier entries are converted and rounded for display; what you typed is kept, so switching back shows it again.`
+                  : `Saved. Weights now show in ${u}.`,
+              );
+            }}
+            options={[
+              { value: "lb", label: "Pounds", sub: "lb · inches" },
+              { value: "kg", label: "Kilograms", sub: "kg · cm" },
+            ]}
+          />
+          <p aria-live="polite" className="font-semibold">
+            {unitSaved && `✓ ${unitSaved}`}
+          </p>
         </div>
-      </form>
+      </div>
 
       <section aria-labelledby="honest" className="border-l-4 border-ink bg-surface p-5">
         <h2 id="honest" className="font-display text-3xl font-extrabold">
