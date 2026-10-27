@@ -14,6 +14,7 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { createWriteQueue } from "./writeQueue";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildBackup } from "./backup";
 import { checkinsIn } from "./checkin";
@@ -106,10 +107,14 @@ let db: SupabaseClient | null = null;
 let session = 0;
 /** bumps on every local change, so a refresh that started before it never overwrites it */
 let edits = 0;
-let queue: Promise<void> = Promise.resolve();
-let pending = 0;
-/** writes that failed, in order; later writes wait behind them */
-let failed: Op[] = [];
+let writes = makeWrites();
+
+function makeWrites() {
+  return createWriteQueue((err) => {
+    console.error("Saving to Supabase failed:", messageOf(err));
+    set({ saveFailed: true });
+  });
+}
 
 const ok = ({ error }: { error: unknown }) => {
   if (error) throw error;
@@ -118,9 +123,9 @@ const messageOf = (e: unknown) => (e && typeof e === "object" && "message" in e 
 
 function resetConnection() {
   session++;
-  failed = [];
-  pending = 0;
-  queue = Promise.resolve();
+  writes.stop();
+  writes = makeWrites();
+  setFlash(null);
 }
 
 /** Called when Clerk reports who is signed in. Loads that person's data. */
@@ -130,7 +135,13 @@ export function connect(userId: string, getToken: () => Promise<string | null>) 
   setInProgressOwner(userId);
   keepOnlyInProgress(userId);
   try {
-    db = createSupabase(getToken);
+    const s = session;
+    db = createSupabase(async () => {
+      if (s !== session) throw new Error("Account changed");
+      const token = await getToken();
+      if (s !== session) throw new Error("Account changed");
+      return token;
+    });
   } catch (e) {
     db = null;
     console.error(messageOf(e));
@@ -173,7 +184,7 @@ async function load() {
   if (!client) return;
   try {
     const loaded = await fetchAll(client);
-    if (s !== session || (state.ready && e !== edits)) return;
+    if (s !== session || (state.ready && (e !== edits || writes.pending))) return;
     set({ ready: true, loadFailed: false, stored: loaded.data, saved: loaded.saved, recovered: loaded.recovered });
   } catch (err) {
     if (s !== session) return;
@@ -190,47 +201,32 @@ export function retryLoad() {
 
 /** Pick up changes made in another tab or on another device, when nothing here is waiting to save. */
 export function refresh() {
-  if (db && state.ready && pending === 0 && failed.length === 0) void load();
+  if (db && state.ready && !writes.pending) void load();
 }
 
 function enqueue(op: Op) {
   const client = db;
   const s = session;
   if (!client) return;
-  pending++;
-  queue = queue
-    .then(async () => {
-      if (s !== session) return;
-      if (failed.length > 0) {
-        failed.push(op);
-        return;
-      }
-      try {
-        await op(client);
-      } catch (err) {
-        if (s !== session) return;
-        console.error("Saving to Supabase failed:", messageOf(err));
-        failed.push(op);
-        set({ saveFailed: true });
-      }
-    })
-    .finally(() => {
-      if (s === session) pending--;
-    });
+  writes.enqueue(async () => {
+    if (s === session) await op(client);
+  });
 }
 
 /** Re-send every change that failed, in the order it was made. */
 export function retrySaves() {
-  const ops = failed;
-  failed = [];
   set({ saveFailed: false });
-  ops.forEach(enqueue);
+  writes.retry();
 }
 
 function commit(stored: Data, ...ops: Op[]) {
   edits++;
   set({ stored });
   ops.forEach(enqueue);
+}
+
+function commitProfile(stored: Data, ...ops: Op[]) {
+  commit(stored, ...ops, putProfile(stored));
 }
 
 function commitSaved(saved: SavedExercise[], op: Op) {
@@ -241,9 +237,11 @@ function commitSaved(saved: SavedExercise[], op: Op) {
 
 /* ---- writes: each one is safe to repeat ---- */
 
-const saveProfile: Op = async (c) => {
-  const row = profileRow(current());
-  if (row) ok(await c.from("profiles").upsert(row, { onConflict: "user_id" }));
+const putProfile = (data: Data): Op => {
+  const row = profileRow(data);
+  return async (c) => {
+    if (row) ok(await c.from("profiles").upsert(row, { onConflict: "user_id" }));
+  };
 };
 const putWorkout = (w: CompletedWorkout): Op => async (c) => ok(await c.from("workouts").upsert(workoutRow(w)));
 const dropWorkout = (id: string): Op => async (c) => ok(await c.from("workouts").delete().eq("id", id));
@@ -274,13 +272,13 @@ function newId(): string {
 export function chooseLook(lookId: LookId) {
   const d = current();
   const profile: Profile = d.profile ? { ...d.profile, lookId } : { lookId, time: "standard", unit: "lb", createdAt: Date.now() };
-  commit({ ...d, profile }, saveProfile);
+  commitProfile({ ...d, profile });
 }
 
 export function updateProfile(patch: Partial<Pick<Profile, "time" | "unit">>) {
   const d = current();
   if (!d.profile) return;
-  commit({ ...d, profile: { ...d.profile, ...patch } }, saveProfile);
+  commitProfile({ ...d, profile: { ...d.profile, ...patch } });
 }
 
 export function setTime(time: TimeOption) {
@@ -292,11 +290,10 @@ export function setUnit(unit: Unit) {
 }
 
 /** Save a finished workout and fold its weights and feedback into the memory. */
-export function saveWorkout(w: Omit<CompletedWorkout, "id" | "createdAt" | "unit">): CompletedWorkout {
+export function saveWorkout(w: Omit<CompletedWorkout, "id" | "createdAt">): CompletedWorkout {
   const d = current();
-  const unit = d.profile?.unit ?? "lb";
-  const workout: CompletedWorkout = { ...w, id: newId(), createdAt: Date.now(), unit };
-  commit({ ...d, workouts: [...d.workouts, workout], weights: updateBook(d.weights, workout) }, putWorkout(workout), saveProfile);
+  const workout: CompletedWorkout = { ...w, id: newId(), createdAt: Date.now() };
+  commitProfile({ ...d, workouts: [...d.workouts, workout], weights: updateBook(d.weights, workout) }, putWorkout(workout));
   return workout;
 }
 
@@ -336,7 +333,7 @@ export function restoreCheckin(c: Checkin) {
 
 export function saveNutrition(profile: NutritionProfile | null) {
   const d = current();
-  commit({ ...d, nutrition: profile }, saveProfile);
+  commitProfile({ ...d, nutrition: profile });
 }
 
 /** Erase this person's plan, workouts, check-ins, weights and saved exercises from their account. */

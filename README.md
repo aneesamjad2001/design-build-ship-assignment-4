@@ -312,7 +312,7 @@ npm install
 npm run dev      # http://localhost:3000
 npm run build
 npm run lint
-npm test         # 195 tests: plans, re-entry, weight memory, validation, rows to and from the database, saved exercises, wger trimming, backup, check-ins, estimate, how-to text, figures
+npm test         # 203 tests: plans, re-entry, weight memory, validation, rows to and from the database, the save queue, account switching, saved exercises, wger trimming and muscle diagrams, backup, check-ins, estimate, how-to text, figures
 npm run e2e      # Playwright: two users can't see each other's data (needs the dev server's keys)
 ```
 

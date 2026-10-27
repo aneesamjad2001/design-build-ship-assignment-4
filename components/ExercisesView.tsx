@@ -247,7 +247,10 @@ function Results({
   if (result.total === 0 || result.exercises.length === 0) {
     return (
       <p role="status" className="text-lg">
-        wger has no exercises for {result.label}. Try &ldquo;Any equipment&rdquo;, or a different muscle.
+        {result.total === 0
+          ? `wger has no exercises for ${result.label}.`
+          : `None of wger's ${plural(result.total, `${result.label} exercise`, `${result.label} exercises`)} has an English name yet.`}{" "}
+        Try &ldquo;Any equipment&rdquo;, or a different muscle.
       </p>
     );
   }
@@ -415,7 +418,10 @@ function SavedItem({ s, onRemove }: { s: SavedExercise; onRemove: () => void }) 
         </form>
       ) : (
         <div className="flex flex-wrap gap-3">
-          <Button ref={editButton} onClick={() => setEditing(true)}>
+          <Button ref={editButton} onClick={() => {
+            setText(s.note);
+            setEditing(true);
+          }}>
             {s.note ? "Edit note" : "Add a note"}
             <span className="sr-only"> for {s.name}</span>
           </Button>

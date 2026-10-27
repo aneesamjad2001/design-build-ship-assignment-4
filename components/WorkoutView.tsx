@@ -154,7 +154,12 @@ function Guided({ initial, workouts, weights, today }: { initial: InProgress; wo
     if (!cur) return;
     const e = getExercise(cur.exerciseId)!;
     const c = validateWeightText(progressOf(cur.exerciseId).weight, w.unit);
-    const base = c.error ? 0 : (c.value ?? 0);
+    if (c.error) {
+      checkWeight();
+      document.getElementById(`weight-${cur.exerciseId}`)?.focus();
+      return;
+    }
+    const base = c.value ?? 0;
     setWeight(fmtWeight(Math.max(0, Math.round((base + direction * weightStep(e, w.unit)) * 10) / 10)));
   }
 
@@ -466,7 +471,7 @@ function ExerciseCard({
 
       <fieldset>
         <legend className="mb-2 text-base font-semibold">{cur.sets === 1 ? "When you've done it" : "Tap each set when you finish it"}</legend>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {Array.from({ length: cur.sets }, (_, i) => {
             const done = i < pr.setsDone;
             return (
@@ -587,7 +592,7 @@ function FinishScreen({
       };
     });
     const note = w.note.trim();
-    onSaved(saveWorkout({ date: today, key: w.planned.key, exercises, ...(note ? { note } : {}) }));
+    onSaved(saveWorkout({ date: today, unit: w.unit, key: w.planned.key, exercises, ...(note ? { note } : {}) }));
   }
 
   return (
