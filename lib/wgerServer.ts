@@ -22,7 +22,8 @@ const cachedBrowse = unstable_cache(
     if (!page) throw new Error("wger returned something that isn't a page of exercises");
     return page;
   },
-  ["wger-browse-v1"],
+  // bump when the trimmed shape changes, so a day-old cache of the old shape isn't served
+  ["wger-browse-v2"],
   { revalidate: 60 * 60 * 24 },
 );
 

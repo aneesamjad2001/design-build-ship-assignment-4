@@ -6,7 +6,7 @@ import type { WgerExercise } from "./wger.ts";
 const ex: WgerExercise = {
   id: 43, name: " Barbell Hack Squats ", description: "", category: "Legs",
   muscles: ["Quads"], musclesSecondary: ["Glutes"], equipment: ["Barbell"],
-  imageUrl: "https://wger.de/media/exercise-images/43/hack.png", license: "CC-BY-SA 3", author: "someone",
+  imageUrl: "https://wger.de/media/exercise-images/43/hack.png", muscleMap: null, license: "CC-BY-SA 3", author: "someone",
 };
 const T = Date.parse("2026-10-26T18:00:00.000Z");
 

@@ -115,3 +115,19 @@ browser checks for sign-in (the isolation test covers what A4 adds).
 not the shell; nothing technically stops `cat .env.local`. The agent didn't run it,
 and when it needed to confirm a key it gave the author a command to run instead. The
 tests load the keys inside their own process and never print them.
+
+**A second reviewer (Oct 27):** at the author's request, OpenAI's Codex reviewed the
+whole project and made focused fixes, which Claude then read, tested and kept:
+- **Account switch:** an old Supabase client can no longer obtain the next account's token.
+- **Saving:**
+  - a failed save stays ahead of newer ones until *Try again* succeeds (`lib/writeQueue.ts`);
+  - each profile save carries the values from the moment of the change;
+  - a refresh never overwrites changes still waiting to save.
+- **Units:** a workout keeps the unit it was done in, even if Plan's unit changed mid-workout.
+- **Weight box:** + and − no longer throw away mistyped text; the error shows instead.
+- **Phone layout:** set buttons wrap on narrow screens.
+- **Library:** reopening a note shows the saved text; clearer "no English exercises" wording.
+
+Left as is, and said so: *Reset everything* and backup restore use several requests, so
+a connection failure halfway can leave part done. Making them one database
+transaction would need a database function, which is more than this pass called for.
