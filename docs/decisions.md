@@ -61,3 +61,57 @@ per-set effort ratings, notifications.
 
 **Cut for simplicity:** muscle and equipment questions, streaks, meal logging, weight
 goals, daily sleep logs, exercise videos, accounts and sync.
+
+## Version 4: accounts, a database and one external API (Oct 26–27)
+
+**The assignment required:** Clerk sign-in (development keys), Supabase with a
+`user_id` and row-level security on every table of someone's data, exactly one
+external API, deployed on Vercel's free plan, keys never in code, the agent denied
+read access to `.env*` before any keys existed, the data model written into
+`AGENTS.md` before building, schema changes as migrations, and `/security-review`
+before merging.
+
+**The author decided** (picked from options the agent laid out, in each case the
+one the agent recommended):
+- **Extend Ironlog** rather than build something new: keep A3's design and tests,
+  move its data from the browser into Supabase per person.
+- **wger** as the one external API (exercises with muscles, equipment and images),
+  over TheMealDB and Open-Meteo from the course list, because it fits a gym app.
+- **Four tables** (`profiles`, `workouts`, `checkins`, `saved_exercises`), with the
+  weight memory and nutrition kept as JSON on `profiles`, rather than trimming to
+  three or splitting into six.
+- **Saving an exercise = a "my exercises" list with a note**, not also swapping it
+  into the A/B/C plan.
+- **Fix all of the TA feedback** on A3 as part of A4 (the feeling picker visibly
+  changes the workout, A/B/C selectable on Today, softer type and a light theme).
+- Set up the accounts and wrote `.env.local` themself, and checked each step in the
+  running app (sign-in, a saved workout, the exercise library, the live site).
+
+**The agent proposed** (and the author accepted by building on it):
+- **The browser talks to Supabase directly with the Clerk session token**
+  (Supabase third-party auth), so RLS is the one boundary. `user_id` defaults to the
+  token's subject in the database and is never sent by the app.
+- **wger is called from our own route handler**, not the browser: its answers carry
+  every language (~176 KB a page, ~13 KB trimmed), descriptions are public HTML to
+  strip to plain text, and the route needs a session and caches for a day. Free-text
+  search turned out not to work, so it's browse by muscle and equipment, then filter
+  by name in the page.
+- **Nothing is read from A3's browser storage**, because it belonged to a browser,
+  not a person; old training comes across with A3's backup file. Only a workout in
+  progress stays local, under a key with the Clerk user id, cleared on sign-out.
+- **Saving through an ordered queue** with a visible "isn't saved yet · Try again"
+  instead of silently dropping a failed write.
+- **Proving isolation with a test that attacks the database**, not only the screens:
+  two dedicated Clerk test users, and B's own token tries to read, change, delete and
+  forge A's rows. It passes against the dev server and the live site.
+- **Sign-in paths in code, not env vars**, after the first deploy sent people to
+  Clerk's hosted page because those paths were only in `.env.local`.
+
+**Cut for simplicity:** swapping saved exercises into the plan, separate tables for
+workout exercises and weight memory, any service-role key, and updating A3's scripted
+browser checks for sign-in (the isolation test covers what A4 adds).
+
+**A limit worth saying out loud:** the deny rule blocks the agent's file-reading tool,
+not the shell; nothing technically stops `cat .env.local`. The agent didn't run it,
+and when it needed to confirm a key it gave the author a command to run instead. The
+tests load the keys inside their own process and never print them.

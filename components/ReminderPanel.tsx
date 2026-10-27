@@ -10,8 +10,8 @@ const tile =
   "group flex min-h-12 cursor-pointer items-center justify-center border-2 border-field bg-surface px-1 text-lg font-semibold transition-colors hover:border-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-on-ink has-[:focus-visible]:transition-none has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus";
 
 /**
- * Ironlog has no server, so it can't push notifications. Your calendar can: this
- * hands it a weekly schedule with an alert 30 minutes before.
+ * Ironlog doesn't send notifications. Your calendar can: this hands it a weekly
+ * schedule with an alert 30 minutes before.
  */
 export function ReminderPanel({ perWeek }: { perWeek: number }) {
   const [days, setDays] = useState<number[]>(() => suggestedDays(perWeek));
@@ -62,7 +62,10 @@ export function ReminderPanel({ perWeek }: { perWeek: number }) {
             </label>
           ))}
         </div>
-        <p className="mt-2 text-sm text-muted">Your plan has {perWeek} days a week.</p>
+        <p className="mt-2 text-sm text-muted">
+          {days.length === 0 ? "No days ticked yet." : `${days.length} ${days.length === 1 ? "day" : "days"} a week ticked.`} These are only nudges: miss
+          one and your next workout simply picks up where you left off.
+        </p>
         {errors.days && (
           <div className="mt-2">
             <FieldError id="reminder-days-error">{errors.days}</FieldError>
@@ -92,8 +95,8 @@ export function ReminderPanel({ perWeek }: { perWeek: number }) {
           Download calendar file
         </Button>
         <p className="mt-2 max-w-prose text-sm text-muted">
-          Open the .ics file to add a repeating workout to Apple, Google or Outlook Calendar, with an alert 30 minutes before. Ironlog can&apos;t send
-          reminders itself — it has no server — so your calendar does the reminding.
+          Open the .ics file to add a repeating workout to Apple, Google or Outlook Calendar, with an alert 30 minutes before. Ironlog doesn&apos;t send
+          notifications, so your calendar does the reminding.
         </p>
       </div>
       {done && <Banner tone="success" title="Calendar file downloaded">Open it to add your weekly workouts.</Banner>}

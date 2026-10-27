@@ -18,7 +18,7 @@ import type { Data, Profile } from "@/lib/data";
 import { getExercise } from "@/lib/library";
 import { CAN_AND_CANT, getLook } from "@/lib/looks";
 import type { LookId } from "@/lib/looks";
-import { chooseLook, resetAll, setUnit, useIronlog } from "@/lib/store";
+import { chooseLook, resetAll, setFlash, setUnit, useIronlog } from "@/lib/store";
 import { planOverview, workoutTitle } from "@/lib/workouts";
 
 export function PlanView() {
@@ -44,7 +44,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
     if (unitChanged) setUnit(unit);
     setSaved(
       unitChanged && count > 0
-        ? `Saved. Weights now show in ${unit}; what you entered before is kept exactly as typed.`
+        ? `Saved. Weights now show in ${unit}. Earlier entries are converted and rounded for display; what you typed is kept, so switching back shows it again.`
         : "Saved. Your next workout follows this plan, and your history and weights stay.",
     );
   }
@@ -165,8 +165,9 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
           Your data
         </h2>
         <p className="mb-4 mt-2 max-w-prose text-muted">
-          Your plan, workouts, check-ins and saved exercises are saved to your account, and only you can see them. You can download a copy any time, or
-          restore one (including a backup from the earlier, device-only Ironlog).
+          Your plan, workouts, check-ins and saved exercises are saved to your account, and only you can see them. You can download a copy of your
+          plan, workouts and check-ins any time, or restore one (including a backup from the earlier, device-only Ironlog). Saved exercises aren&apos;t in
+          the backup file; they stay in your account.
         </p>
         <BackupPanel sessionCount={count} />
         <div className="mt-8 border-t border-line pt-5">
@@ -186,6 +187,7 @@ function Plan({ profile, data }: { profile: Profile; data: Data }) {
         onConfirm={() => {
           setConfirmReset(false);
           resetAll();
+          setFlash({ title: "Everything erased", detail: "Your account is empty now. Pick a look to start again.", path: "/" });
           router.push("/");
         }}
       />

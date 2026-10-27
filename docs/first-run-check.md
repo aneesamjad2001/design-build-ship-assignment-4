@@ -1,6 +1,63 @@
 # First-run checks
 
-## This version (v3: pick a body, guided workout), Oct 20
+## Assignment 4: accounts, the database and the exercise library, Oct 27
+
+After deploying, a subagent played a **brand-new user** of the live site
+(`https://design-build-ship-assignment-4.vercel.app`). It was told not to read any
+code, only to judge what a person sees, and drove a real browser (Playwright) on a
+phone (390×844), with a desktop browser (1440×900) as the "other device". Persona:
+goes to the gym irregularly, no plan, no muscle jargon, hates logbooks. Goal: *"make
+an account, tell it the body I want, do my first workout and save it, look up a couple
+of exercises and save one with a note, then come back later on another device and see
+whether it remembers me."*
+
+It signed up with a Clerk test address (`+clerk_test`, no real email). **Faked, and
+said so:** a Clerk testing token, because headless Chromium stayed stuck on Clerk's bot
+check ("Verifying your request…"), so that check wasn't tested; and it moved its one
+workout 35 days back through Supabase's API with its own session to fake time away.
+It finished with *Plan → Reset everything*, which erased all its data.
+
+**What worked:**
+- **Signed out:** only the welcome page shows. Every other page goes to sign-in.
+- **Onboarding:** with no look picked, the error appears and focus moves to the looks. The keyboard-only pass works, and the focus ring is visible.
+- **Feeling and length visibly change the workout:** for example *"Tired: 8–10 reps instead of 8–12, skips Plank"*, and 4 / 8 / 9 exercises for short / standard / long.
+- **The workout:** weight errors appear next to the field, and swap, skip and resume all work. *"3 of 5 exercises finished, 1 partly done"* is accurate, and remembered weights go down after *Hard*.
+- **The library:**
+  - Searching with nothing picked shows an error.
+  - It shows a loading message, then *"21 exercises for Chest + Dumbbell"*, and filtering by name works.
+  - Cards without a photo say *"No photo on wger"*, every card has its CC-BY-SA credit, and descriptions show as plain text.
+  - A 281+ character note is refused, and Undo restores the exercise with its note.
+- **Another device:** the look, next workout, remembered weight, saved exercise and note, check-in and estimate were all there.
+- **Coming back after the faked 5 weeks:** *"Welcome back after 5 weeks — easing in with two sets and lighter weights"*, with the workout cut from 65 to 45 minutes.
+- **Sign-out:** goes back to the welcome page and clears the workout in progress kept in the browser.
+
+**What it found, and what changed** (the bug was reproduced in a browser before and
+after the fix):
+
+| Finding | Change |
+|---|---|
+| **Bug:** removing a saved exercise showed "… removed · Undo" at the top of the page, off-screen (about 6,000 px up with results listed) | The undo notice sits right under *Your saved exercises*, where the Remove was; checked at 390 px that Undo is on screen and works |
+| Switching to kg said entries were "kept exactly as typed", but Progress showed them converted (25 lb as 11.5 kg) | Says entries are converted and rounded for display, and what was typed comes back if you switch back |
+| Reminders said Ironlog "has no server" (old A3 wording) | "Ironlog doesn't send notifications, so your calendar does the reminding" |
+| "Your plan has 3 days a week" never changed and clashed with "no schedule to keep" | Counts the days actually ticked and says they're only nudges |
+| The backup text implied saved exercises were in the file; they aren't | Says the file has your plan, workouts and check-ins, and saved exercises stay in your account |
+| Muscle list used jargon (Lats, Traps, Brachialis, Serratus, Soleus) | Each has plain words: "Lats (sides of the back)", "Soleus (lower calf)" |
+| wger steps showed each "•" alone on a line above its text | The bullet stays with its step (new unit test) |
+| "0 workouts in the last four weeks" after a break reads like guilt | That line only shows when there's at least one |
+| *Reset everything* went to onboarding without a word | "Everything erased. Your account is empty now. Pick a look to start again." |
+| "Theme: System" wrapped onto two lines in the desktop header | Kept on one line |
+
+**Left as is:**
+- *The second workout jumps from ~30 to ~65 minutes.* The first workout is a deliberately light intro, and the length picker is right there.
+- *"Translated with DeepL.com"* in some descriptions. That is wger's own text, shown as published.
+- *Tapping + after typing "20kg" reset the box to 5.* The agent saw this once and didn't re-check it. The "20kg" error already appears next to the box.
+
+**Limits:**
+- Headless Chromium with phone emulation, not a real phone, Safari or a screen reader.
+- The bot check was skipped and the gap was faked.
+- wger failures (down, bad filter) weren't caused. The unit tests and the route's own states cover those.
+
+## Assignment 3, v3: pick a body, guided workout, Oct 20
 
 After deploying, a subagent played a **brand-new user** of the live site. It was told
 not to read any code, only to judge what a person sees, and drove a real browser

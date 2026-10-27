@@ -312,7 +312,7 @@ npm install
 npm run dev      # http://localhost:3000
 npm run build
 npm run lint
-npm test         # 194 tests: plans, re-entry, weight memory, validation, rows to and from the database, saved exercises, wger trimming, backup, check-ins, estimate, how-to text, figures
+npm test         # 195 tests: plans, re-entry, weight memory, validation, rows to and from the database, saved exercises, wger trimming, backup, check-ins, estimate, how-to text, figures
 npm run e2e      # Playwright: two users can't see each other's data (needs the dev server's keys)
 ```
 
@@ -323,9 +323,17 @@ Browser checks from Assignment 3 (Playwright, not part of the build) live in
 `a11y-check.js` runs the axe audit. They were written for the signed-out, one-browser
 version and haven't been updated for sign-in.
 
-## First-run check (Assignment 3)
+## First-run check
 
-After deploying Assignment 3, an agent played a brand-new, irregular gym-goer on the live site
+**Assignment 4:** after deploying, an agent signed up as a brand-new user on the live
+site (phone, plus a desktop browser as a second device) and did the whole journey:
+onboarding, a workout, the exercise library, coming back on another device and after a
+faked 5-week gap, signing out, and *Reset everything*. All of it worked, and the
+account carried over to the second device. It found one bug (the *Undo* after removing
+a saved exercise appeared off-screen) and nine wording and polish issues. All ten are
+fixed; the table is in [`docs/first-run-check.md`](./docs/first-run-check.md).
+
+**Assignment 3:** after deploying Assignment 3, an agent played a brand-new, irregular gym-goer on the live site
 (phone, plus a desktop look), told not to read the code, with the goal *"tell it the
 body I want, do my first workout, save it, come back weeks later."* Full report:
 [`docs/first-run-check.md`](./docs/first-run-check.md) (the first release's check, and
